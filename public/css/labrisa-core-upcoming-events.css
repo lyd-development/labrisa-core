@@ -8,56 +8,64 @@
 	position: relative;
 }
 
-.labrisa-swiper-wrap {
+.labrisa-marquee {
+	--labrisa-marquee-gap: 24px;
+	--labrisa-marquee-card-width: 320px;
+	--labrisa-marquee-ratio: 1.33;
 	position: relative;
 }
 
-.labrisa-swiper {
-	--labrisa-swiper-ratio: 1.33;
-	/* Swiper core's own 'swiper' stylesheet handles overflow, the
-	   .swiper-wrapper flex/transition layout, and .swiper-slide
-	   flex-shrink:0 — this file only adds our own sizing/visuals on top. */
+.labrisa-marquee__swiper {
+	width: 100%;
+	overflow: hidden;
 }
 
-/* Slide width comes from the widget's responsive "Slide Width" control
-   (selectors targeting .swiper-slide directly); Swiper is initialized with
-   slidesPerView:'auto' so it reads that width off the DOM. */
+.labrisa-marquee__swiper .swiper-wrapper {
+	align-items: stretch;
+}
 
-.labrisa-swiper-nav {
+.labrisa-marquee__swiper .swiper-slide {
+	width: var(--labrisa-marquee-card-width);
+	height: auto;
+}
+
+/* Nav arrows are absolutely positioned over the swiper's own overflow:hidden
+   box, so they must be direct children of .labrisa-marquee (not the swiper
+   itself) to stay visible. */
+.labrisa-marquee__nav-btn {
 	position: absolute;
 	top: 50%;
 	z-index: 2;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 44px;
-	height: 44px;
+	width: 40px;
+	height: 40px;
 	padding: 0;
 	background-color: #ffffff;
 	color: #111111;
 	border: 1px solid rgba(0, 0, 0, 0.15);
 	border-radius: 50%;
 	cursor: pointer;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 	transform: translateY(-50%);
 	transition: opacity 0.2s ease;
 }
 
-.labrisa-swiper-nav:hover {
+.labrisa-marquee__nav-btn:hover {
 	opacity: 0.8;
 }
 
-.labrisa-swiper-nav.swiper-button-disabled {
+.labrisa-marquee__nav-btn.swiper-button-disabled {
 	opacity: 0.35;
 	cursor: default;
 	pointer-events: none;
 }
 
-.labrisa-swiper-nav--prev {
+.labrisa-marquee__nav-btn--prev {
 	left: 8px;
 }
 
-.labrisa-swiper-nav--next {
+.labrisa-marquee__nav-btn--next {
 	right: 8px;
 }
 
@@ -66,7 +74,7 @@
 	display: block;
 	overflow: hidden;
 	border-radius: 4px;
-	aspect-ratio: var(--labrisa-swiper-ratio, 1.33);
+	aspect-ratio: var(--labrisa-marquee-ratio, 1.33);
 	background-color: rgba(0, 0, 0, 0.05);
 }
 

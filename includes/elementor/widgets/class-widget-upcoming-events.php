@@ -4,10 +4,9 @@
  * Elementor "Upcoming Events" widget.
  *
  * Displays events whose event_end_date has not passed yet (site timezone)
- * as a Swiper carousel (manual navigation only, no autoplay) of their
- * event_banner_image, each slide offering a "Book Now" link
- * (event_ticket_url) and an "Explore More" button that opens a popup with
- * the event's details.
+ * as an infinite-loop marquee carousel of their event_banner_image, each
+ * slide offering a "Book Now" link (event_ticket_url) and an "Explore More"
+ * button that opens a popup with the event's details.
  *
  * @link       https://lydbaligroup.com
  * @since      1.0.0
@@ -47,21 +46,21 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 	}
 
 	public function get_keywords() {
-		return array( 'event', 'events', 'upcoming event', 'carousel', 'slider', 'swiper', 'popup' );
+		return array( 'event', 'events', 'upcoming event', 'carousel', 'marquee', 'slider', 'popup' );
 	}
 
 	public function get_style_depends() {
-		return array( 'swiper', 'labrisa-core-upcoming-events' );
+		return array( 'labrisa-core-upcoming-events' );
 	}
 
 	public function get_script_depends() {
-		return array( 'swiper', 'labrisa-core-upcoming-events' );
+		return array( 'labrisa-core-upcoming-events' );
 	}
 
 	protected function register_controls() {
 		$this->register_query_controls();
 		$this->register_content_controls();
-		$this->register_carousel_controls();
+		$this->register_marquee_controls();
 		$this->register_style_controls();
 	}
 
@@ -249,11 +248,11 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 	}
 
 	/**
-	 * Content Tab: Swiper carousel controls (manual navigation, no autoplay).
+	 * Content Tab: Swiper carousel controls (no autoplay — navigation only).
 	 */
-	protected function register_carousel_controls() {
+	protected function register_marquee_controls() {
 		$this->start_controls_section(
-			'section_carousel',
+			'section_marquee',
 			array(
 				'label' => __( 'Carousel', 'labrisa-core' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
@@ -270,11 +269,12 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		);
 
 		$this->add_control(
-			'infinite_loop',
+			'loop',
 			array(
-				'label'   => __( 'Infinite Loop', 'labrisa-core' ),
-				'type'    => \Elementor\Controls_Manager::SWITCHER,
-				'default' => 'yes',
+				'label'       => __( 'Infinite Loop', 'labrisa-core' ),
+				'description' => __( 'Wrap back to the first/last event when navigating past an edge.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
 			)
 		);
 
@@ -303,7 +303,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					'size' => 240,
 				),
 				'selectors'  => array(
-					'{{WRAPPER}} .swiper-slide' => 'width: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-card-width: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
@@ -311,28 +311,21 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		$this->add_responsive_control(
 			'gap',
 			array(
-				'label'       => __( 'Gap', 'labrisa-core' ),
-				'type'        => \Elementor\Controls_Manager::SLIDER,
-				'size_units'  => array( 'px' ),
-				'range'       => array(
+				'label'      => __( 'Gap', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
 					'px' => array(
 						'min' => 0,
 						'max' => 80,
 					),
 				),
-				'default'     => array(
+				'default'    => array(
 					'unit' => 'px',
 					'size' => 24,
 				),
-				/*
-				 * Applied as slide margin (not Swiper's JS `spaceBetween`
-				 * option) so Elementor's own responsive-control CSS/media
-				 * queries drive it for free, with no JS breakpoint mapping
-				 * needed. Swiper's slidesPerView:'auto' layout already
-				 * measures each slide's outer width including margin.
-				 */
-				'selectors'   => array(
-					'{{WRAPPER}} .swiper-slide' => 'margin-right: {{SIZE}}{{UNIT}};',
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-gap: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
@@ -351,7 +344,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					'auto' => __( 'Original', 'labrisa-core' ),
 				),
 				'selectors' => array(
-					'{{WRAPPER}} .labrisa-swiper' => '--labrisa-swiper-ratio: {{VALUE}};',
+					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-ratio: {{VALUE}};',
 				),
 			)
 		);
@@ -389,6 +382,55 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				),
 				'selectors'  => array(
 					'{{WRAPPER}} .labrisa-event-slide__media' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_navigation',
+			array(
+				'label'     => __( 'Navigation', 'labrisa-core' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'enable_navigation' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_color',
+			array(
+				'label'     => __( 'Arrow Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => 'rgba(0,0,0,0.15)',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn' => 'border-color: {{VALUE}};',
 				),
 			)
 		);
@@ -640,31 +682,26 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		$posts = $query->posts;
 		?>
 		<div class="labrisa-upcoming-events">
-			<div class="labrisa-swiper-wrap">
+			<div class="labrisa-marquee">
 				<div
-					class="labrisa-swiper swiper"
-					data-labrisa-swiper
-					data-loop="<?php echo esc_attr( $settings['infinite_loop'] ); ?>"
+					class="swiper labrisa-marquee__swiper"
+					data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
 				>
 					<div class="swiper-wrapper">
 						<?php
 						foreach ( $posts as $post ) {
 							setup_postdata( $post );
-							?>
-							<div class="swiper-slide">
-								<?php $this->render_event_slide( $post->ID, $settings ); ?>
-							</div>
-							<?php
+							$this->render_event_slide( $post->ID, $settings );
 						}
 						wp_reset_postdata();
 						?>
 					</div>
 				</div>
 				<?php if ( 'yes' === $settings['enable_navigation'] ) : ?>
-					<button type="button" class="labrisa-swiper-nav labrisa-swiper-nav--prev" data-labrisa-swiper-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
+					<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--prev" data-labrisa-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
 					</button>
-					<button type="button" class="labrisa-swiper-nav labrisa-swiper-nav--next" data-labrisa-swiper-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
+					<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--next" data-labrisa-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
 					</button>
 				<?php endif; ?>
@@ -690,7 +727,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			$date_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $meta['event_date'] );
 		}
 		?>
-		<div class="labrisa-event-slide">
+		<div class="swiper-slide labrisa-event-slide">
 			<div class="labrisa-event-slide__media">
 				<?php if ( $image_id ) : ?>
 					<?php echo wp_get_attachment_image( $image_id, $settings['image_size'], false, array( 'class' => 'labrisa-event-slide__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() output is already escaped. ?>

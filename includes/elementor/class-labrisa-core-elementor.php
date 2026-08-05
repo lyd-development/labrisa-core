@@ -82,9 +82,10 @@ class Labrisa_Core_Elementor {
 			LABRISA_CORE_VERSION
 		);
 
-		// 'swiper' (JS + CSS) is Elementor core's own bundled Swiper build
-		// (assets/lib/swiper/v8); reusing its handle avoids shipping a
-		// second copy of the library.
+		// 'swiper' is registered by Elementor core itself (includes/frontend.php)
+		// from its bundled assets/lib/swiper/v8/ — reuse it instead of
+		// shipping a second copy, since Elementor is already a hard
+		// requirement for every includes/elementor/* class.
 		wp_register_style(
 			'labrisa-core-upcoming-events',
 			LABRISA_CORE_PLUGIN_URL . 'public/css/labrisa-core-upcoming-events.css',

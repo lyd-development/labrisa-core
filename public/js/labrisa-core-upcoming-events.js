@@ -1,33 +1,34 @@
 /**
  * Front-end behaviour for the Labrisa Core "Upcoming Events" widget: a
- * Swiper carousel (manual navigation only, no autoplay) plus the
- * "Explore More" popup. Swiper itself is Elementor core's own bundled
- * copy (registered under the 'swiper' handle), not a copy we ship.
+ * Swiper carousel (navigation only, no autoplay) plus the "Explore More"
+ * popup. Swiper itself is not bundled here — it reuses the 'swiper' script
+ * Elementor core already registers from its own assets/lib/swiper/v8/,
+ * declared as a dependency in Labrisa_Core_Elementor::register_assets().
  */
 ( function () {
 	'use strict';
 
 	/**
-	 * slidesPerView:'auto' + loop reads slide width/margin straight off the
-	 * DOM (set via the widget's "Slide Width"/"Gap" controls in CSS), so no
-	 * JS sizing config is needed here beyond wiring up the custom nav arrows.
+	 * @param {Element} root
 	 */
 	function initCarousel( root ) {
-		var container = root.querySelector( '[data-labrisa-swiper]' );
+		var container = root.querySelector( '.labrisa-marquee__swiper' );
 
-		if ( ! container || ! window.Swiper ) {
+		if ( ! container || 'undefined' === typeof window.Swiper ) {
 			return;
 		}
 
-		var prevEl = root.querySelector( '[data-labrisa-swiper-prev]' );
-		var nextEl = root.querySelector( '[data-labrisa-swiper-next]' );
+		var prevEl = root.querySelector( '[data-labrisa-prev]' );
+		var nextEl = root.querySelector( '[data-labrisa-next]' );
+		var gap = parseFloat( getComputedStyle( root.querySelector( '.labrisa-marquee' ) ).getPropertyValue( '--labrisa-marquee-gap' ) );
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 'auto',
-			watchOverflow: true,
+			spaceBetween: isNaN( gap ) ? 24 : gap,
 			loop: 'yes' === container.dataset.loop,
-			navigation: prevEl && nextEl ? { prevEl: prevEl, nextEl: nextEl } : false,
-			a11y: true,
+			grabCursor: true,
+			watchOverflow: true,
+			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
 		} );
 	}
 
