@@ -26,8 +26,11 @@
 			slidesPerView: 'auto',
 			spaceBetween: isNaN( gap ) ? 24 : gap,
 			loop: 'yes' === container.dataset.loop,
+			// Swiper auto-disables loop (and logs a warning) if there aren't
+			// enough slides to fill it more than once — expected with only a
+			// couple of upcoming events, not a bug; add more events to get
+			// the wrap-around effect.
 			grabCursor: true,
-			watchOverflow: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
 		} );
 	}
