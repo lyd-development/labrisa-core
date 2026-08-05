@@ -88,7 +88,6 @@
 .labrisa-event-slide__overlay {
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.75) 100%);
 }
 
 .labrisa-event-slide__body {
@@ -169,7 +168,8 @@
 .labrisa-event-modal__backdrop {
 	position: absolute;
 	inset: 0;
-	background-color: rgba(0, 0, 0, 0.7);
+	background-color: rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(50px);
 }
 
 .labrisa-event-modal__dialog {
