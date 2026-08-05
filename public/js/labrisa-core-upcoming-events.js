@@ -30,15 +30,20 @@
 		var prevEl = root.querySelector( '[data-labrisa-prev]' );
 		var nextEl = root.querySelector( '[data-labrisa-next]' );
 		var gap = parseFloat( getComputedStyle( root.querySelector( '.labrisa-marquee' ) ).getPropertyValue( '--labrisa-marquee-gap' ) );
+		var loop = 'yes' === container.dataset.loop;
+		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 'auto',
 			spaceBetween: isNaN( gap ) ? 24 : gap,
-			loop: 'yes' === container.dataset.loop,
-			// Swiper auto-disables loop (and logs a warning) if there aren't
-			// enough slides to fill it more than once — expected with only a
-			// couple of upcoming events, not a bug; add more events to get
-			// the wrap-around effect.
+			loop: loop,
+			// With slidesPerView: 'auto' and only a handful of real slides,
+			// Swiper's default loop-clone count under-estimates how many
+			// duplicates it needs, which makes slideNext() get stuck after
+			// the first wrap while slidePrev() keeps working (the two use
+			// different shift-correction math). Forcing enough cloned
+			// slides fixes it — see swiper's loop + slidesPerView:'auto' + few slides.
+			loopedSlides: loop ? Math.max( slideCount * 2, 8 ) : undefined,
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
 		} );
