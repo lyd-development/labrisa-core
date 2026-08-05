@@ -101,8 +101,10 @@ class Labrisa_Core_Events {
 	 *     @type int    $paged          Page number for pagination. Default 1.
 	 *     @type string $orderby        'event_end_date', 'event_date', 'title' or 'date'.
 	 *     @type string $order          'ASC' or 'DESC'.
-	 *     @type array  $event_types    Term IDs to filter by in the event-types taxonomy.
-	 *     @type array  $event_line_up  Term IDs to filter by in the event-line-up taxonomy.
+	 *     @type array  $event_types         Term IDs to filter by in the event-types taxonomy.
+	 *     @type array  $event_line_up       Term IDs to filter by in the event-line-up taxonomy.
+	 *     @type bool   $current_month_only  Only include events whose event_date falls within
+	 *                                       the current calendar month (site timezone). Default false.
 	 * }
 	 * @return   WP_Query
 	 */
@@ -111,14 +113,39 @@ class Labrisa_Core_Events {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'posts_per_page' => 8,
-				'paged'          => 1,
-				'orderby'        => 'event_end_date',
-				'order'          => 'DESC',
-				'event_types'    => array(),
-				'event_line_up'  => array(),
+				'posts_per_page'      => 8,
+				'paged'               => 1,
+				'orderby'             => 'event_end_date',
+				'order'               => 'DESC',
+				'event_types'         => array(),
+				'event_line_up'       => array(),
+				'current_month_only'  => false,
 			)
 		);
+
+		$meta_query = array(
+			array(
+				'key'     => 'event_end_date',
+				'value'   => current_time( 'Y-m-d H:i:s' ),
+				'compare' => $compare,
+				'type'    => 'DATETIME',
+			),
+		);
+
+		if ( $args['current_month_only'] ) {
+			$now = new DateTimeImmutable( 'now', wp_timezone() );
+
+			$meta_query['relation'] = 'AND';
+			$meta_query[]           = array(
+				'key'     => 'event_date',
+				'value'   => array(
+					$now->modify( 'first day of this month' )->setTime( 0, 0, 0 )->format( 'Y-m-d H:i:s' ),
+					$now->modify( 'last day of this month' )->setTime( 23, 59, 59 )->format( 'Y-m-d H:i:s' ),
+				),
+				'compare' => 'BETWEEN',
+				'type'    => 'DATETIME',
+			);
+		}
 
 		$query_args = array(
 			'post_type'           => self::POST_TYPE,
@@ -127,14 +154,7 @@ class Labrisa_Core_Events {
 			'paged'               => $args['paged'],
 			'ignore_sticky_posts' => true,
 			'order'               => $args['order'],
-			'meta_query'          => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				array(
-					'key'     => 'event_end_date',
-					'value'   => current_time( 'Y-m-d H:i:s' ),
-					'compare' => $compare,
-					'type'    => 'DATETIME',
-				),
-			),
+			'meta_query'          => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		);
 
 		if ( in_array( $args['orderby'], array( 'event_end_date', 'event_date' ), true ) ) {

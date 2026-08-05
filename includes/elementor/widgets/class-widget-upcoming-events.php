@@ -140,6 +140,17 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			)
 		);
 
+		$this->add_control(
+			'current_month_only',
+			array(
+				'label'       => __( 'This Month Only', 'labrisa-core' ),
+				'description' => __( 'Only show events whose date falls within the current calendar month.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => '',
+				'separator'   => 'before',
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -279,31 +290,23 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		);
 
 		$this->add_responsive_control(
-			'card_width',
+			'columns',
 			array(
-				'label'      => __( 'Slide Width', 'labrisa-core' ),
-				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array(
-					'px' => array(
-						'min' => 200,
-						'max' => 600,
-					),
+				'label'          => __( 'Columns', 'labrisa-core' ),
+				'type'           => \Elementor\Controls_Manager::SELECT,
+				'default'        => '4',
+				'tablet_default' => '3',
+				'mobile_default' => '2',
+				'options'        => array(
+					'1' => '1',
+					'2' => '2',
+					'3' => '3',
+					'4' => '4',
+					'5' => '5',
+					'6' => '6',
 				),
-				'default'    => array(
-					'unit' => 'px',
-					'size' => 320,
-				),
-				'tablet_default' => array(
-					'unit' => 'px',
-					'size' => 280,
-				),
-				'mobile_default' => array(
-					'unit' => 'px',
-					'size' => 240,
-				),
-				'selectors'  => array(
-					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-card-width: {{SIZE}}{{UNIT}};',
+				'selectors'      => array(
+					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-columns: {{VALUE}};',
 				),
 			)
 		);
@@ -663,11 +666,12 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 
 		$query = Labrisa_Core_Events::get_upcoming_events(
 			array(
-				'posts_per_page' => $settings['posts_per_page'],
-				'orderby'        => $settings['orderby'],
-				'order'          => $settings['order'],
-				'event_types'    => $settings['event_types'],
-				'event_line_up'  => $settings['event_line_up'],
+				'posts_per_page'      => $settings['posts_per_page'],
+				'orderby'             => $settings['orderby'],
+				'order'               => $settings['order'],
+				'event_types'         => $settings['event_types'],
+				'event_line_up'       => $settings['event_line_up'],
+				'current_month_only'  => 'yes' === $settings['current_month_only'],
 			)
 		);
 

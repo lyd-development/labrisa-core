@@ -10,7 +10,7 @@
 
 .labrisa-marquee {
 	--labrisa-marquee-gap: 24px;
-	--labrisa-marquee-card-width: 320px;
+	--labrisa-marquee-columns: 4;
 	--labrisa-marquee-ratio: 1.33;
 	position: relative;
 }
@@ -25,7 +25,10 @@
 }
 
 .labrisa-marquee__swiper .swiper-slide {
-	width: var(--labrisa-marquee-card-width);
+	/* Exactly --labrisa-marquee-columns slides fit per view, evenly sized,
+	   with --labrisa-marquee-gap between them (Swiper adds that gap itself
+	   via spaceBetween, so it only needs subtracting here once per gap). */
+	width: calc( ( 100% - ( var(--labrisa-marquee-columns) - 1 ) * var(--labrisa-marquee-gap) ) / var(--labrisa-marquee-columns) );
 	height: auto;
 }
 
