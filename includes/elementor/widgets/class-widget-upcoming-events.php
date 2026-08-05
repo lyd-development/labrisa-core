@@ -711,12 +711,14 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					</div>
 				</div>
 				<?php if ( 'yes' === $settings['enable_navigation'] ) : ?>
-					<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--prev" data-labrisa-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-					<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--next" data-labrisa-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
+					<div class="labrisa-marquee__nav">
+						<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--prev" data-labrisa-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						</button>
+						<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--next" data-labrisa-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						</button>
+					</div>
 				<?php endif; ?>
 			</div>
 			<?php if ( 'yes' === $settings['show_explore'] ) : ?>

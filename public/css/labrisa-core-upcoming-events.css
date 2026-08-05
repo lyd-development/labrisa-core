@@ -29,13 +29,16 @@
 	height: auto;
 }
 
-/* Nav arrows are absolutely positioned over the swiper's own overflow:hidden
-   box, so they must be direct children of .labrisa-marquee (not the swiper
-   itself) to stay visible. */
+/* Nav sits below the carousel, right-aligned, instead of overlaying the
+   slide images. */
+.labrisa-marquee__nav {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 16px;
+}
+
 .labrisa-marquee__nav-btn {
-	position: absolute;
-	top: 50%;
-	z-index: 2;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -47,7 +50,6 @@
 	border: 1px solid rgba(0, 0, 0, 0.15);
 	border-radius: 50%;
 	cursor: pointer;
-	transform: translateY(-50%);
 	transition: opacity 0.2s ease;
 }
 
@@ -59,14 +61,6 @@
 	opacity: 0.35;
 	cursor: default;
 	pointer-events: none;
-}
-
-.labrisa-marquee__nav-btn--prev {
-	left: 8px;
-}
-
-.labrisa-marquee__nav-btn--next {
-	right: 8px;
 }
 
 .labrisa-event-slide__media {
