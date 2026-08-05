@@ -21,21 +21,11 @@
 
 		var prevEl = root.querySelector( '[data-labrisa-swiper-prev]' );
 		var nextEl = root.querySelector( '[data-labrisa-swiper-next]' );
-		var loop = 'yes' === container.dataset.loop;
-		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 'auto',
 			watchOverflow: true,
-			loop: loop,
-			/*
-			 * With slidesPerView:'auto', Swiper's automatic guess at how many
-			 * loop-clone slides to generate on each side is unreliable, so
-			 * navigating one direction (typically "next") can run out of
-			 * clones and stop looping before the other direction does.
-			 * Forcing enough additional clones for a full extra set fixes it.
-			 */
-			loopAdditionalSlides: loop ? slideCount : 0,
+			loop: 'yes' === container.dataset.loop,
 			navigation: prevEl && nextEl ? { prevEl: prevEl, nextEl: nextEl } : false,
 			a11y: true,
 		} );
