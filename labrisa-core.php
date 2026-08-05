@@ -38,6 +38,14 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'LABRISA_CORE_VERSION', '1.0.0' );
 
 /**
+ * Absolute filesystem path and URL to the plugin root, used throughout the
+ * plugin instead of repeated plugin_dir_path()/plugin_dir_url() calls.
+ */
+define( 'LABRISA_CORE_PLUGIN_FILE', __FILE__ );
+define( 'LABRISA_CORE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'LABRISA_CORE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+/**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-labrisa-core-activator.php
  */

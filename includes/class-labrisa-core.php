@@ -78,6 +78,7 @@ class Labrisa_Core {
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+		$this->define_elementor_hooks();
 
 	}
 
@@ -121,6 +122,20 @@ class Labrisa_Core {
 		 * side of the site.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-labrisa-core-public.php';
+
+		/**
+		 * Query helpers for the "events" custom post type, shared by the
+		 * Elementor widgets, dynamic tags, and blocks below.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/post-types/class-labrisa-core-events.php';
+
+		/**
+		 * The class responsible for registering this plugin's Elementor
+		 * widget category, widgets, and their shared assets. Its callbacks
+		 * only run when Elementor is active, since they are hooked to
+		 * Elementor-specific actions.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/elementor/class-labrisa-core-elementor.php';
 
 		$this->loader = new Labrisa_Core_Loader();
 
@@ -172,6 +187,23 @@ class Labrisa_Core {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+
+	}
+
+	/**
+	 * Register all of the hooks related to Elementor integration (widget
+	 * category, widgets, and their shared assets).
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function define_elementor_hooks() {
+
+		$plugin_elementor = new Labrisa_Core_Elementor();
+
+		$this->loader->add_action( 'elementor/elements/categories_registered', $plugin_elementor, 'register_category' );
+		$this->loader->add_action( 'elementor/widgets/register', $plugin_elementor, 'register_widgets' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_elementor, 'register_assets' );
 
 	}
 

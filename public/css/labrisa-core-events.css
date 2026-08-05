@@ -1,0 +1,103 @@
+/**
+ * Styles for the Labrisa Core "Past Events" Elementor widget.
+ * Registered as the 'labrisa-core-events' handle and loaded on demand via
+ * the widget's get_style_depends().
+ */
+
+.labrisa-events-grid {
+	--labrisa-events-columns: 4;
+	--labrisa-events-gap: 16px;
+	--labrisa-events-ratio: 1;
+}
+
+.labrisa-events-grid--grid {
+	display: grid;
+	grid-template-columns: repeat(var(--labrisa-events-columns), 1fr);
+	gap: var(--labrisa-events-gap);
+}
+
+.labrisa-events-grid--masonry {
+	column-count: var(--labrisa-events-columns);
+	column-gap: var(--labrisa-events-gap);
+}
+
+.labrisa-events-grid--masonry .labrisa-event-card {
+	break-inside: avoid;
+	margin-bottom: var(--labrisa-events-gap);
+}
+
+.labrisa-event-card__media {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	border-radius: 4px;
+}
+
+.labrisa-events-grid--grid .labrisa-event-card__media {
+	aspect-ratio: var(--labrisa-events-ratio, 1);
+}
+
+.labrisa-event-card__image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.35s ease;
+}
+
+.labrisa-events-grid--masonry .labrisa-event-card__image {
+	height: auto;
+}
+
+.labrisa-event-card__overlay {
+	position: absolute;
+	inset: 0;
+	background-color: rgba(0, 0, 0, 0.45);
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.labrisa-event-card__media:hover .labrisa-event-card__overlay {
+	opacity: 1;
+}
+
+.labrisa-event-card__media:hover .labrisa-event-card__image {
+	transform: scale(1.05);
+}
+
+.labrisa-event-card__caption {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 16px;
+	opacity: 0;
+	transform: translateY(10px);
+	transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.labrisa-event-card__media:hover .labrisa-event-card__caption {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.labrisa-event-card__title {
+	color: #ffffff;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.labrisa-event-card__date {
+	color: rgba(255, 255, 255, 0.8);
+	font-size: 13px;
+}
+
+.labrisa-events-empty {
+	padding: 24px;
+	text-align: center;
+	opacity: 0.7;
+}
