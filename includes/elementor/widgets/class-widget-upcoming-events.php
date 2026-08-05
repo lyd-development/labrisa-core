@@ -680,6 +680,19 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		}
 
 		$posts = $query->posts;
+
+		// Swiper's loop mode clones slides internally to fake the wrap-
+		// around; with very few real slides its clone math can run out of
+		// room once the visible area (wider on desktop) approaches or
+		// exceeds the real slide count, which breaks slideNext() at larger
+		// viewports even though it works fine on mobile. Giving it more
+		// real DOM slides to loop through sidesteps that entirely.
+		if ( 'yes' === $settings['loop'] && count( $posts ) > 0 && count( $posts ) < 6 ) {
+			$original_posts = $posts;
+			while ( count( $posts ) < 6 ) {
+				$posts = array_merge( $posts, $original_posts );
+			}
+		}
 		?>
 		<div class="labrisa-upcoming-events">
 			<div class="labrisa-marquee">
