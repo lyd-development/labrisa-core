@@ -1,0 +1,237 @@
+/**
+ * Styles for the Labrisa Core "Upcoming Events" Elementor widget.
+ * Registered as the 'labrisa-core-upcoming-events' handle and loaded on
+ * demand via the widget's get_style_depends().
+ */
+
+.labrisa-upcoming-events {
+	position: relative;
+}
+
+.labrisa-swiper-wrap {
+	position: relative;
+}
+
+.labrisa-swiper {
+	--labrisa-swiper-ratio: 1.33;
+	/* Swiper core's own 'swiper' stylesheet handles overflow, the
+	   .swiper-wrapper flex/transition layout, and .swiper-slide
+	   flex-shrink:0 — this file only adds our own sizing/visuals on top. */
+}
+
+/* Slide width comes from the widget's responsive "Slide Width" control
+   (selectors targeting .swiper-slide directly); Swiper is initialized with
+   slidesPerView:'auto' so it reads that width off the DOM. */
+
+.labrisa-swiper-nav {
+	position: absolute;
+	top: 50%;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	background-color: #ffffff;
+	color: #111111;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: 50%;
+	cursor: pointer;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+	transform: translateY(-50%);
+	transition: opacity 0.2s ease;
+}
+
+.labrisa-swiper-nav:hover {
+	opacity: 0.8;
+}
+
+.labrisa-swiper-nav.swiper-button-disabled {
+	opacity: 0.35;
+	cursor: default;
+	pointer-events: none;
+}
+
+.labrisa-swiper-nav--prev {
+	left: 8px;
+}
+
+.labrisa-swiper-nav--next {
+	right: 8px;
+}
+
+.labrisa-event-slide__media {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	border-radius: 4px;
+	aspect-ratio: var(--labrisa-swiper-ratio, 1.33);
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+.labrisa-event-slide__image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.labrisa-event-slide__overlay {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.75) 100%);
+}
+
+.labrisa-event-slide__body {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 16px;
+}
+
+.labrisa-event-slide__title {
+	color: #ffffff;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.labrisa-event-slide__meta {
+	color: rgba(255, 255, 255, 0.8);
+	font-size: 13px;
+}
+
+.labrisa-event-slide__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.labrisa-event-slide__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 16px;
+	font-size: 13px;
+	font-weight: 600;
+	border-radius: 4px;
+	text-decoration: none;
+	cursor: pointer;
+	border: 1px solid transparent;
+	background-color: transparent;
+	transition: opacity 0.2s ease;
+}
+
+.labrisa-event-slide__btn:hover {
+	opacity: 0.85;
+}
+
+.labrisa-event-slide__btn--primary {
+	background-color: #111111;
+	color: #ffffff;
+}
+
+.labrisa-event-slide__btn--secondary {
+	color: #ffffff;
+	border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Explore popup */
+
+.labrisa-event-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+}
+
+.labrisa-event-modal[hidden] {
+	display: none;
+}
+
+.labrisa-event-modal__backdrop {
+	position: absolute;
+	inset: 0;
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+.labrisa-event-modal__dialog {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	max-width: 720px;
+	max-height: 90vh;
+	overflow-y: auto;
+	background-color: #ffffff;
+	border-radius: 8px;
+}
+
+.labrisa-event-modal__close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	color: #ffffff;
+	border: 0;
+	border-radius: 50%;
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.labrisa-event-modal__media img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.labrisa-event-modal__body {
+	padding: 24px;
+}
+
+.labrisa-event-modal__title {
+	margin: 0 0 8px;
+}
+
+.labrisa-event-modal__meta {
+	margin-bottom: 16px;
+	color: #666666;
+	font-size: 14px;
+}
+
+.labrisa-event-modal__terms {
+	margin-bottom: 24px;
+	line-height: 1.6;
+}
+
+.labrisa-event-modal__cta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px 24px;
+	background-color: #111111;
+	color: #ffffff;
+	text-decoration: none;
+	border-radius: 4px;
+	font-weight: 600;
+}
+
+body.labrisa-event-modal-open {
+	overflow: hidden;
+}

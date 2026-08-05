@@ -61,8 +61,10 @@ class Labrisa_Core_Elementor {
 	 */
 	public function register_widgets( $widgets_manager ) {
 		require_once LABRISA_CORE_PLUGIN_DIR . 'includes/elementor/widgets/class-widget-past-events.php';
+		require_once LABRISA_CORE_PLUGIN_DIR . 'includes/elementor/widgets/class-widget-upcoming-events.php';
 
 		$widgets_manager->register( new Labrisa_Core_Elementor_Widget_Past_Events() );
+		$widgets_manager->register( new Labrisa_Core_Elementor_Widget_Upcoming_Events() );
 	}
 
 	/**
@@ -78,6 +80,24 @@ class Labrisa_Core_Elementor {
 			LABRISA_CORE_PLUGIN_URL . 'public/css/labrisa-core-events.css',
 			array(),
 			LABRISA_CORE_VERSION
+		);
+
+		// 'swiper' (JS + CSS) is Elementor core's own bundled Swiper build
+		// (assets/lib/swiper/v8); reusing its handle avoids shipping a
+		// second copy of the library.
+		wp_register_style(
+			'labrisa-core-upcoming-events',
+			LABRISA_CORE_PLUGIN_URL . 'public/css/labrisa-core-upcoming-events.css',
+			array( 'swiper' ),
+			LABRISA_CORE_VERSION
+		);
+
+		wp_register_script(
+			'labrisa-core-upcoming-events',
+			LABRISA_CORE_PLUGIN_URL . 'public/js/labrisa-core-upcoming-events.js',
+			array( 'swiper' ),
+			LABRISA_CORE_VERSION,
+			true
 		);
 	}
 }

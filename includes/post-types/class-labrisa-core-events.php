@@ -47,19 +47,66 @@ class Labrisa_Core_Events {
 	 * site's configured timezone (Settings > General).
 	 *
 	 * @since    1.0.0
-	 * @param    array    $args    {
+	 * @param    array    $args    See self::query_events_by_end_date() for the
+	 *                             list of supported keys. Defaults to ordering
+	 *                             by event_end_date, newest-past-event first.
+	 * @return   WP_Query
+	 */
+	public static function get_past_events( array $args = array() ) {
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'orderby' => 'event_end_date',
+				'order'   => 'DESC',
+			)
+		);
+
+		return self::query_events_by_end_date( '<', $args );
+	}
+
+	/**
+	 * Query events whose event_end_date has not passed yet, according to the
+	 * site's configured timezone (Settings > General).
+	 *
+	 * @since    1.0.0
+	 * @param    array    $args    See self::query_events_by_end_date() for the
+	 *                             list of supported keys. Defaults to ordering
+	 *                             by event_date, soonest-upcoming-event first.
+	 * @return   WP_Query
+	 */
+	public static function get_upcoming_events( array $args = array() ) {
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'orderby' => 'event_date',
+				'order'   => 'ASC',
+			)
+		);
+
+		return self::query_events_by_end_date( '>=', $args );
+	}
+
+	/**
+	 * Shared query builder behind get_past_events()/get_upcoming_events().
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @param    string    $compare    Meta compare operator against event_end_date ('<' or '>=').
+	 * @param    array     $args       {
 	 *     Optional. Query arguments.
 	 *
 	 *     @type int    $posts_per_page Number of events to return. -1 for all. Default 8.
 	 *     @type int    $paged          Page number for pagination. Default 1.
-	 *     @type string $orderby        'event_end_date', 'event_date', 'title' or 'date'. Default 'event_end_date'.
-	 *     @type string $order          'ASC' or 'DESC'. Default 'DESC'.
+	 *     @type string $orderby        'event_end_date', 'event_date', 'title' or 'date'.
+	 *     @type string $order          'ASC' or 'DESC'.
 	 *     @type array  $event_types    Term IDs to filter by in the event-types taxonomy.
 	 *     @type array  $event_line_up  Term IDs to filter by in the event-line-up taxonomy.
 	 * }
 	 * @return   WP_Query
 	 */
-	public static function get_past_events( array $args = array() ) {
+	private static function query_events_by_end_date( $compare, array $args ) {
 
 		$args = wp_parse_args(
 			$args,
@@ -84,7 +131,7 @@ class Labrisa_Core_Events {
 				array(
 					'key'     => 'event_end_date',
 					'value'   => current_time( 'Y-m-d H:i:s' ),
-					'compare' => '<',
+					'compare' => $compare,
 					'type'    => 'DATETIME',
 				),
 			),
@@ -152,10 +199,11 @@ class Labrisa_Core_Events {
 	 */
 	public static function get_event_meta( $post_id ) {
 		return array(
-			'event_place'      => get_post_meta( $post_id, 'event_place', true ),
-			'event_date'       => get_post_meta( $post_id, 'event_date', true ),
-			'event_end_date'   => get_post_meta( $post_id, 'event_end_date', true ),
-			'event_ticket_url' => get_post_meta( $post_id, 'event_ticket_url', true ),
+			'event_place'                => get_post_meta( $post_id, 'event_place', true ),
+			'event_date'                 => get_post_meta( $post_id, 'event_date', true ),
+			'event_end_date'             => get_post_meta( $post_id, 'event_end_date', true ),
+			'event_ticket_url'           => get_post_meta( $post_id, 'event_ticket_url', true ),
+			'event_terms_and_conditions' => get_post_meta( $post_id, 'event_terms_and_conditions', true ),
 		);
 	}
 }
