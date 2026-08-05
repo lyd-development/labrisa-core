@@ -18,6 +18,15 @@
 			return;
 		}
 
+		// Elementor fires frontend/element_ready again on every re-render
+		// (e.g. any settings change in the editor), which would otherwise
+		// stack a second Swiper instance on the same DOM node and break
+		// navigation/loop. Destroy any previous instance on this element
+		// first — Swiper attaches itself as `container.swiper`.
+		if ( container.swiper ) {
+			container.swiper.destroy( true, true );
+		}
+
 		var prevEl = root.querySelector( '[data-labrisa-prev]' );
 		var nextEl = root.querySelector( '[data-labrisa-next]' );
 		var gap = parseFloat( getComputedStyle( root.querySelector( '.labrisa-marquee' ) ).getPropertyValue( '--labrisa-marquee-gap' ) );
