@@ -56,9 +56,17 @@
 			// once Infinite Loop is on, which isn't the intended effect here.
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
+			// A true continuous "marquee" (no per-card pause) rather than
+			// Swiper's default step-then-wait autoplay: delay is set to ~0 so
+			// the next glide starts the instant the current one ends, speed
+			// controls how long that continuous glide across one card takes
+			// (lower = faster), and freeMode keeps the motion from snapping
+			// to slide boundaries between glides.
+			speed: autoplayEnabled ? autoplaySpeed : 300,
+			freeMode: autoplayEnabled ? { enabled: true, momentum: false } : false,
 			autoplay: autoplayEnabled
 				? {
-					delay: autoplaySpeed,
+					delay: 1,
 					disableOnInteraction: false,
 					pauseOnMouseEnter: pauseOnHover,
 				}

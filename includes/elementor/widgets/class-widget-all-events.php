@@ -273,13 +273,14 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 		$this->add_control(
 			'autoplay_speed',
 			array(
-				'label'     => __( 'Autoplay Speed (ms)', 'labrisa-core' ),
-				'type'      => \Elementor\Controls_Manager::NUMBER,
-				'default'   => 3000,
-				'min'       => 500,
-				'max'       => 10000,
-				'step'      => 100,
-				'condition' => array(
+				'label'       => __( 'Scroll Speed (ms per card)', 'labrisa-core' ),
+				'description' => __( 'This is a continuous marquee, not a pause-then-advance autoplay — the carousel glides non-stop. Lower is faster.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::NUMBER,
+				'default'     => 3000,
+				'min'         => 500,
+				'max'         => 10000,
+				'step'        => 100,
+				'condition'   => array(
 					'enable_autoplay' => 'yes',
 				),
 			)
