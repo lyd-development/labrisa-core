@@ -356,7 +356,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			'enable_offset',
 			array(
 				'label'       => __( 'Enable Offset', 'labrisa-core' ),
-				'description' => __( 'Add empty space before the first slide so it does not start flush against the edge.', 'labrisa-core' ),
+				'description' => __( 'Peek the next card at the right edge only — the left edge always stays flush.', 'labrisa-core' ),
 				'type'        => \Elementor\Controls_Manager::SWITCHER,
 				'default'     => '',
 				'separator'   => 'before',
@@ -366,18 +366,20 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		$this->add_control(
 			'offset',
 			array(
-				'label'      => __( 'Offset', 'labrisa-core' ),
+				'label'      => __( 'Peek Amount', 'labrisa-core' ),
+				'description' => __( 'How much of the next card peeks in on the right. E.g. with 3 Columns and 0.5, 3.5 cards are visible.', 'labrisa-core' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array(
 					'px' => array(
-						'min' => 0,
-						'max' => 200,
+						'min'  => 0.1,
+						'max'  => 1,
+						'step' => 0.05,
 					),
 				),
 				'default'    => array(
 					'unit' => 'px',
-					'size' => 24,
+					'size' => 0.5,
 				),
 				'condition'  => array(
 					'enable_offset' => 'yes',
@@ -504,6 +506,15 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			)
 		);
 
+		$this->start_controls_tabs( 'tabs_nav_style' );
+
+		$this->start_controls_tab(
+			'tab_nav_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
+			)
+		);
+
 		$this->add_control(
 			'nav_color',
 			array(
@@ -540,6 +551,52 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			)
 		);
 
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_nav_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'nav_hover_color',
+			array(
+				'label'     => __( 'Arrow Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_hover_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_hover_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn:hover' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
 		$this->end_controls_section();
 
 		$this->start_controls_section(
@@ -547,6 +604,23 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			array(
 				'label' => __( 'Title & Meta', 'labrisa-core' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'title_typography',
+				'selector' => '{{WRAPPER}} .labrisa-event-slide__title',
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_content_style' );
+
+		$this->start_controls_tab(
+			'tab_content_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
 			)
 		);
 
@@ -562,14 +636,6 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			)
 		);
 
-		$this->add_group_control(
-			\Elementor\Group_Control_Typography::get_type(),
-			array(
-				'name'     => 'title_typography',
-				'selector' => '{{WRAPPER}} .labrisa-event-slide__title',
-			)
-		);
-
 		$this->add_control(
 			'meta_color',
 			array(
@@ -582,6 +648,41 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			)
 		);
 
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_content_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'title_hover_color',
+			array(
+				'label'     => __( 'Title Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__media:hover .labrisa-event-slide__title' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'meta_hover_color',
+			array(
+				'label'     => __( 'Date & Place Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__media:hover .labrisa-event-slide__meta' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
 		$this->end_controls_section();
 
 		$this->start_controls_section(
@@ -589,6 +690,23 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			array(
 				'label' => __( 'Buttons', 'labrisa-core' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'buttons_typography',
+				'selector' => '{{WRAPPER}} .labrisa-event-slide__btn',
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_buttons_style' );
+
+		$this->start_controls_tab(
+			'tab_buttons_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
 			)
 		);
 
@@ -640,13 +758,62 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			)
 		);
 
-		$this->add_group_control(
-			\Elementor\Group_Control_Typography::get_type(),
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_buttons_hover',
 			array(
-				'name'     => 'buttons_typography',
-				'selector' => '{{WRAPPER}} .labrisa-event-slide__btn',
+				'label' => __( 'Hover', 'labrisa-core' ),
 			)
 		);
+
+		$this->add_control(
+			'book_now_hover_bg_color',
+			array(
+				'label'     => __( 'Book Now Background', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--primary:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'book_now_hover_text_color',
+			array(
+				'label'     => __( 'Book Now Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--primary:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'explore_hover_text_color',
+			array(
+				'label'     => __( 'Explore More Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--secondary:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'explore_hover_border_color',
+			array(
+				'label'     => __( 'Explore More Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--secondary:hover' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
 
 		$this->add_control(
 			'buttons_radius',
@@ -800,14 +967,18 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			}
 		}
 
-		$offset = ( 'yes' === $settings['enable_offset'] && ! empty( $settings['offset']['size'] ) ) ? absint( $settings['offset']['size'] ) : 0;
+		// A right-only "peek" of the next card, done purely in CSS via a
+		// fractional addition to the column count (see .labrisa-marquee__swiper
+		// .swiper-slide) rather than Swiper's slidesOffsetBefore, which — when
+		// combined with Infinite Loop — pulls a cloned slide into view on the
+		// *left* edge too, which is not what "offset" is meant to do here.
+		$peek = ( 'yes' === $settings['enable_offset'] && ! empty( $settings['offset']['size'] ) ) ? (float) $settings['offset']['size'] : 0;
 		?>
 		<div class="labrisa-upcoming-events">
-			<div class="labrisa-marquee">
+			<div class="labrisa-marquee" style="--labrisa-marquee-peek: <?php echo esc_attr( $peek ); ?>;">
 				<div
 					class="swiper labrisa-marquee__swiper"
 					data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
-					data-offset="<?php echo esc_attr( $offset ); ?>"
 				>
 					<div class="swiper-wrapper">
 						<?php

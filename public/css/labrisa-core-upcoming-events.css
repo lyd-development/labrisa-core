@@ -12,6 +12,7 @@
 	--labrisa-marquee-gap: 24px;
 	--labrisa-marquee-columns: 4;
 	--labrisa-marquee-ratio: 1.33;
+	--labrisa-marquee-peek: 0;
 	position: relative;
 }
 
@@ -25,10 +26,14 @@
 }
 
 .labrisa-marquee__swiper .swiper-slide {
-	/* Exactly --labrisa-marquee-columns slides fit per view, evenly sized,
-	   with --labrisa-marquee-gap between them (Swiper adds that gap itself
-	   via spaceBetween, so it only needs subtracting here once per gap). */
-	width: calc( ( 100% - ( var(--labrisa-marquee-columns) - 1 ) * var(--labrisa-marquee-gap) ) / var(--labrisa-marquee-columns) );
+	/* --labrisa-marquee-columns slides fit per view, evenly sized, with
+	   --labrisa-marquee-gap between them (Swiper adds that gap itself via
+	   spaceBetween, so it only needs subtracting here once per gap). When
+	   --labrisa-marquee-peek is > 0 ("Enable Offset" control), the divisor
+	   grows by that fraction so an extra sliver of the next card shows at
+	   the right edge only — the left edge is never touched, since this is
+	   plain narrower sizing, not a scroll/slide offset. */
+	width: calc( ( 100% - ( var(--labrisa-marquee-columns) - 1 + var(--labrisa-marquee-peek) ) * var(--labrisa-marquee-gap) ) / ( var(--labrisa-marquee-columns) + var(--labrisa-marquee-peek) ) );
 	height: auto;
 }
 
@@ -53,11 +58,7 @@
 	border: 1px solid rgba(0, 0, 0, 0.15);
 	border-radius: 50%;
 	cursor: pointer;
-	transition: opacity 0.2s ease;
-}
-
-.labrisa-marquee__nav-btn:hover {
-	opacity: 0.8;
+	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .labrisa-marquee__nav-btn.swiper-button-disabled {
@@ -102,6 +103,7 @@
 	color: #ffffff;
 	font-weight: 600;
 	line-height: 1.3;
+	transition: color 0.2s ease;
 }
 
 .labrisa-event-slide__meta {
@@ -110,6 +112,7 @@
 	gap: 4px;
 	color: rgba(255, 255, 255, 0.8);
 	font-size: 13px;
+	transition: color 0.2s ease;
 }
 
 .labrisa-event-slide__meta-row {
@@ -146,11 +149,7 @@
 	cursor: pointer;
 	border: 1px solid transparent;
 	background-color: transparent;
-	transition: opacity 0.2s ease;
-}
-
-.labrisa-event-slide__btn:hover {
-	opacity: 0.85;
+	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .labrisa-event-slide__btn--primary {

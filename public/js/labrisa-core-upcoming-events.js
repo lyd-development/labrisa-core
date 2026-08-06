@@ -32,7 +32,6 @@
 		var gap = parseFloat( getComputedStyle( root.querySelector( '.labrisa-marquee' ) ).getPropertyValue( '--labrisa-marquee-gap' ) );
 		var loop = 'yes' === container.dataset.loop;
 		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
-		var offset = parseInt( container.dataset.offset, 10 ) || 0;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 'auto',
@@ -45,7 +44,10 @@
 			// different shift-correction math). Forcing enough cloned
 			// slides fixes it — see swiper's loop + slidesPerView:'auto' + few slides.
 			loopedSlides: loop ? Math.max( slideCount * 2, 8 ) : undefined,
-			slidesOffsetBefore: offset,
+			// Next-card "peek" (Enable Offset control) is handled purely in
+			// CSS via --labrisa-marquee-peek, not slidesOffsetBefore — that
+			// option pulls a cloned slide into view on the *left* edge too
+			// once Infinite Loop is on, which isn't the intended effect here.
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
 		} );
