@@ -102,13 +102,16 @@
 
 .labrisa-event-slide__actions {
 	display: flex;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	gap: 8px;
 	margin-top: 8px;
+	justify-content: space-between;
 }
 
 .labrisa-event-slide__btn {
 	display: inline-flex;
+	flex: 0 0 50%;
+    box-sizing: border-box;
 	align-items: center;
 	justify-content: center;
 	padding: 8px 16px;
