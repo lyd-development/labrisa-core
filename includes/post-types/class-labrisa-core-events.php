@@ -89,6 +89,62 @@ class Labrisa_Core_Events {
 	}
 
 	/**
+	 * Query every published event regardless of date — no event_end_date
+	 * filtering at all.
+	 *
+	 * @since    1.0.0
+	 * @param    array    $args    {
+	 *     Optional. Query arguments.
+	 *
+	 *     @type int    $posts_per_page Number of events to return. -1 for all. Default 8.
+	 *     @type int    $paged          Page number for pagination. Default 1.
+	 *     @type string $orderby        'event_end_date', 'event_date', 'title' or 'date'. Default 'event_date'.
+	 *     @type string $order          'ASC' or 'DESC'. Default 'ASC'.
+	 *     @type array  $event_types    Term IDs to filter by in the event-types taxonomy.
+	 *     @type array  $event_line_up  Term IDs to filter by in the event-line-up taxonomy.
+	 * }
+	 * @return   WP_Query
+	 */
+	public static function get_all_events( array $args = array() ) {
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'posts_per_page' => 8,
+				'paged'          => 1,
+				'orderby'        => 'event_date',
+				'order'          => 'ASC',
+				'event_types'    => array(),
+				'event_line_up'  => array(),
+			)
+		);
+
+		$query_args = array(
+			'post_type'           => self::POST_TYPE,
+			'post_status'         => 'publish',
+			'posts_per_page'      => $args['posts_per_page'],
+			'paged'               => $args['paged'],
+			'ignore_sticky_posts' => true,
+			'order'               => $args['order'],
+		);
+
+		if ( in_array( $args['orderby'], array( 'event_end_date', 'event_date' ), true ) ) {
+			$query_args['meta_key'] = $args['orderby']; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$query_args['orderby']  = 'meta_value';
+		} else {
+			$query_args['orderby'] = $args['orderby'];
+		}
+
+		$tax_query = self::build_tax_query( $args['event_types'], $args['event_line_up'] );
+
+		if ( ! empty( $tax_query ) ) {
+			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		}
+
+		return new WP_Query( $query_args );
+	}
+
+	/**
 	 * Shared query builder behind get_past_events()/get_upcoming_events().
 	 *
 	 * @since    1.0.0
@@ -164,21 +220,42 @@ class Labrisa_Core_Events {
 			$query_args['orderby'] = $args['orderby'];
 		}
 
+		$tax_query = self::build_tax_query( $args['event_types'], $args['event_line_up'] );
+
+		if ( ! empty( $tax_query ) ) {
+			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		}
+
+		return new WP_Query( $query_args );
+	}
+
+	/**
+	 * Build a WP_Query-ready tax_query array from event-types/event-line-up
+	 * term ID lists. Shared by every query method on this class.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @param    array    $event_types    Term IDs in the event-types taxonomy.
+	 * @param    array    $event_line_up  Term IDs in the event-line-up taxonomy.
+	 * @return   array
+	 */
+	private static function build_tax_query( array $event_types, array $event_line_up ) {
+
 		$tax_query = array();
 
-		if ( ! empty( $args['event_types'] ) ) {
+		if ( ! empty( $event_types ) ) {
 			$tax_query[] = array(
 				'taxonomy' => self::TAX_EVENT_TYPES,
 				'field'    => 'term_id',
-				'terms'    => array_map( 'absint', (array) $args['event_types'] ),
+				'terms'    => array_map( 'absint', $event_types ),
 			);
 		}
 
-		if ( ! empty( $args['event_line_up'] ) ) {
+		if ( ! empty( $event_line_up ) ) {
 			$tax_query[] = array(
 				'taxonomy' => self::TAX_EVENT_LINE_UP,
 				'field'    => 'term_id',
-				'terms'    => array_map( 'absint', (array) $args['event_line_up'] ),
+				'terms'    => array_map( 'absint', $event_line_up ),
 			);
 		}
 
@@ -186,11 +263,7 @@ class Labrisa_Core_Events {
 			$tax_query['relation'] = 'AND';
 		}
 
-		if ( ! empty( $tax_query ) ) {
-			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-		}
-
-		return new WP_Query( $query_args );
+		return $tax_query;
 	}
 
 	/**

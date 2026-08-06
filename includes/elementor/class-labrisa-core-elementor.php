@@ -62,9 +62,11 @@ class Labrisa_Core_Elementor {
 	public function register_widgets( $widgets_manager ) {
 		require_once LABRISA_CORE_PLUGIN_DIR . 'includes/elementor/widgets/class-widget-past-events.php';
 		require_once LABRISA_CORE_PLUGIN_DIR . 'includes/elementor/widgets/class-widget-upcoming-events.php';
+		require_once LABRISA_CORE_PLUGIN_DIR . 'includes/elementor/widgets/class-widget-all-events.php';
 
 		$widgets_manager->register( new Labrisa_Core_Elementor_Widget_Past_Events() );
 		$widgets_manager->register( new Labrisa_Core_Elementor_Widget_Upcoming_Events() );
+		$widgets_manager->register( new Labrisa_Core_Elementor_Widget_All_Events() );
 	}
 
 	/**
@@ -96,6 +98,21 @@ class Labrisa_Core_Elementor {
 		wp_register_script(
 			'labrisa-core-upcoming-events',
 			LABRISA_CORE_PLUGIN_URL . 'public/js/labrisa-core-upcoming-events.js',
+			array( 'swiper' ),
+			LABRISA_CORE_VERSION,
+			true
+		);
+
+		wp_register_style(
+			'labrisa-core-all-events',
+			LABRISA_CORE_PLUGIN_URL . 'public/css/labrisa-core-all-events.css',
+			array( 'swiper' ),
+			LABRISA_CORE_VERSION
+		);
+
+		wp_register_script(
+			'labrisa-core-all-events',
+			LABRISA_CORE_PLUGIN_URL . 'public/js/labrisa-core-all-events.js',
 			array( 'swiper' ),
 			LABRISA_CORE_VERSION,
 			true
