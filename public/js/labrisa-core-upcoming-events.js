@@ -32,6 +32,7 @@
 		var gap = parseFloat( getComputedStyle( root.querySelector( '.labrisa-marquee' ) ).getPropertyValue( '--labrisa-marquee-gap' ) );
 		var loop = 'yes' === container.dataset.loop;
 		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
+		var offset = parseInt( container.dataset.offset, 10 ) || 0;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 'auto',
@@ -44,6 +45,7 @@
 			// different shift-correction math). Forcing enough cloned
 			// slides fixes it — see swiper's loop + slidesPerView:'auto' + few slides.
 			loopedSlides: loop ? Math.max( slideCount * 2, 8 ) : undefined,
+			slidesOffsetBefore: offset,
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
 		} );

@@ -80,6 +80,15 @@
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+	transition: transform 0.35s ease;
+}
+
+.labrisa-event-slide__overlay {
+	position: absolute;
+	inset: 0;
+	background-color: rgba(0, 0, 0, 0);
+	transition: background-color 0.35s ease;
+	pointer-events: none;
 }
 
 .labrisa-event-slide__body {
@@ -96,8 +105,23 @@
 }
 
 .labrisa-event-slide__meta {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 	color: rgba(255, 255, 255, 0.8);
 	font-size: 13px;
+}
+
+.labrisa-event-slide__meta-row {
+	display: flex;
+	align-items: center;
+}
+
+.labrisa-event-slide__meta-icon {
+	width: 14px;
+	height: 14px;
+	margin-right: 4px;
+	flex-shrink: 0;
 }
 
 .labrisa-event-slide__actions {
