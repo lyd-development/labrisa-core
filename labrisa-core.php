@@ -16,7 +16,7 @@
  * Plugin Name:       Labrisa Core
  * Plugin URI:        https://lydbaligroup.com
  * Description:       Plugin for Labrisa Core Functions
- * Version:           1.0.33
+ * Version:           1.0.34
  * Author:            Web Developer
  * Author URI:        https://lydbaligroup.com/
  * License:           GPL-2.0+
@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'LABRISA_CORE_VERSION', '1.0.33' );
+define( 'LABRISA_CORE_VERSION', '1.0.34' );
 
 /**
  * Absolute filesystem path and URL to the plugin root, used throughout the

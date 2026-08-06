@@ -461,7 +461,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'default'   => 'rgba(0,0,0,0.3)',
 				'selectors' => array(
-					'{{WRAPPER}} .labrisa-event-slide__media:hover .labrisa-event-slide__overlay' => 'background-color: {{VALUE}};',
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__overlay' => 'background-color: {{VALUE}};',
 				),
 			)
 		);
@@ -484,7 +484,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					'size' => 1.05,
 				),
 				'selectors'  => array(
-					'{{WRAPPER}} .labrisa-event-slide__media:hover .labrisa-event-slide__image' => 'transform: scale({{SIZE}});',
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__image' => 'transform: scale({{SIZE}});',
 				),
 			)
 		);
@@ -663,7 +663,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				'label'     => __( 'Title Color', 'labrisa-core' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'selectors' => array(
-					'{{WRAPPER}} .labrisa-event-slide__media:hover .labrisa-event-slide__title' => 'color: {{VALUE}};',
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__title' => 'color: {{VALUE}};',
 				),
 			)
 		);
@@ -674,7 +674,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				'label'     => __( 'Date & Place Color', 'labrisa-core' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'selectors' => array(
-					'{{WRAPPER}} .labrisa-event-slide__media:hover .labrisa-event-slide__meta' => 'color: {{VALUE}};',
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__meta' => 'color: {{VALUE}};',
 				),
 			)
 		);
@@ -1028,7 +1028,8 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					<?php echo wp_get_attachment_image( $image_id, $settings['image_size'], false, array( 'class' => 'labrisa-event-slide__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() output is already escaped. ?>
 				<?php endif; ?>
 				<span class="labrisa-event-slide__overlay"></span>
-				<div class="labrisa-event-slide__body">
+			</div>
+			<div class="labrisa-event-slide__body">
 					<?php if ( 'yes' === $settings['show_title'] ) : ?>
 						<span class="labrisa-event-slide__title"><?php echo esc_html( $title ); ?></span>
 					<?php endif; ?>
@@ -1082,7 +1083,6 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 						</span>
 					<?php endif; ?>
 				</div>
-			</div>
 		</div>
 		<?php
 	}

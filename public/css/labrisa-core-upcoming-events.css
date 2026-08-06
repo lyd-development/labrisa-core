@@ -35,6 +35,14 @@
 	   plain narrower sizing, not a scroll/slide offset. */
 	width: calc( ( 100% - ( var(--labrisa-marquee-columns) - 1 + var(--labrisa-marquee-peek) ) * var(--labrisa-marquee-gap) ) / ( var(--labrisa-marquee-columns) + var(--labrisa-marquee-peek) ) );
 	height: auto;
+	/* .swiper-wrapper's align-items: stretch already equalizes every slide
+	   in a row to the tallest one's natural height; making the slide itself
+	   a flex column (with __media pinned to its aspect-ratio height and
+	   __body filling what's left, see below) is what makes each card
+	   actually use that equal height instead of just reserving empty space
+	   at the bottom of the shorter ones. */
+	display: flex;
+	flex-direction: column;
 }
 
 /* Nav sits below the carousel, right-aligned, instead of overlaying the
@@ -74,6 +82,7 @@
 	border-radius: 4px;
 	aspect-ratio: var(--labrisa-marquee-ratio, 1.33);
 	background-color: rgba(0, 0, 0, 0.05);
+	flex-shrink: 0;
 }
 
 .labrisa-event-slide__image {
@@ -95,6 +104,7 @@
 .labrisa-event-slide__body {
 	display: flex;
 	flex-direction: column;
+	flex: 1 1 auto;
 	gap: 6px;
 	padding: 16px;
 }
@@ -131,7 +141,8 @@
 	display: flex;
 	flex-wrap: nowrap;
 	gap: 8px;
-	margin-top: 8px;
+	margin-top: auto;
+	padding-top: 8px;
 	justify-content: space-between;
 }
 
