@@ -52,6 +52,7 @@ class Labrisa_Core_Admin_Events_CSV {
 		'post_title',
 		'post_content',
 		'post_status',
+		'post_date',
 		'event_type',
 		'event_line_up',
 		'event_place',
@@ -140,7 +141,7 @@ class Labrisa_Core_Admin_Events_CSV {
 			<ul style="list-style:disc;margin-left:20px;">
 				<li><?php esc_html_e( 'Leave ID empty to create a new event; fill it in to update an existing one.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'event_line_up supports multiple terms separated by a pipe character, e.g. "Term A|Term B". Terms that do not exist yet are created automatically.', 'labrisa-core' ); ?></li>
-				<li><?php esc_html_e( 'event_date and event_end_date must be in "Y-m-d H:i:s" format, e.g. 2026-08-15 21:00:00.', 'labrisa-core' ); ?></li>
+				<li><?php esc_html_e( 'post_date, event_date, and event_end_date must be in "Y-m-d H:i:s" format, e.g. 2026-08-15 21:00:00. Leave post_date empty to use the current time on new events, or keep the existing published date when updating.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'event_banner_image and event_past_image_square accept either an image URL (downloaded into the media library) or an existing attachment ID.', 'labrisa-core' ); ?></li>
 			</ul>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
@@ -223,6 +224,7 @@ class Labrisa_Core_Admin_Events_CSV {
 				'La Brisa Presents Fantasia 2',
 				'An evening of music, light, and atmosphere.',
 				'publish',
+				'2026-08-01 10:00:00',
 				'Party',
 				'DJ One|DJ Two',
 				'La Brisa',
@@ -378,6 +380,13 @@ class Labrisa_Core_Admin_Events_CSV {
 			'post_status'  => ! empty( $data['post_status'] ) ? sanitize_key( $data['post_status'] ) : 'publish',
 		);
 
+		// Leave post_date out entirely when blank so WordPress falls back to
+		// its own default (now on insert, unchanged on update) instead of
+		// forcing every imported row to the same date.
+		if ( ! empty( $data['post_date'] ) ) {
+			$postarr['post_date'] = sanitize_text_field( $data['post_date'] );
+		}
+
 		if ( $post_id ) {
 			$postarr['ID'] = $post_id;
 			$result        = wp_update_post( $postarr, true );
@@ -469,6 +478,7 @@ class Labrisa_Core_Admin_Events_CSV {
 			$post->post_title,
 			$post->post_content,
 			$post->post_status,
+			$post->post_date,
 			is_wp_error( $event_types ) ? '' : implode( '|', $event_types ),
 			is_wp_error( $line_up ) ? '' : implode( '|', $line_up ),
 			$meta['event_place'],
