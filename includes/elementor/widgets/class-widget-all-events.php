@@ -1116,7 +1116,7 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 	 * @param array $settings
 	 */
 	private function render_event_slide( $post_id, $settings ) {
-		$image_id = Labrisa_Core_Events::get_event_image_id( $post_id, 'event_banner_image' );
+		$image_id = Labrisa_Core_Events::get_event_image_id( $post_id, 'event_past_image_square' );
 		$meta     = Labrisa_Core_Events::get_event_meta( $post_id );
 		$title    = get_the_title( $post_id );
 
