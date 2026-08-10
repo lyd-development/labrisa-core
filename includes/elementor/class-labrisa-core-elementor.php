@@ -84,6 +84,14 @@ class Labrisa_Core_Elementor {
 			LABRISA_CORE_VERSION
 		);
 
+		wp_register_script(
+			'labrisa-core-past-events',
+			LABRISA_CORE_PLUGIN_URL . 'public/js/labrisa-core-past-events.js',
+			array(),
+			LABRISA_CORE_VERSION,
+			true
+		);
+
 		// 'swiper' is registered by Elementor core itself (includes/frontend.php)
 		// from its bundled assets/lib/swiper/v8/ — reuse it instead of
 		// shipping a second copy, since Elementor is already a hard
@@ -117,5 +125,28 @@ class Labrisa_Core_Elementor {
 			LABRISA_CORE_VERSION,
 			true
 		);
+	}
+
+	/**
+	 * Bridge for the Past Events widget's "Load More" AJAX endpoint
+	 * (wp_ajax_labrisa_core_load_more_past_events / its _nopriv_ twin, wired
+	 * up in Labrisa_Core::define_elementor_hooks()).
+	 *
+	 * Those wp_ajax_* hooks are registered on this plain class — not
+	 * directly on Labrisa_Core_Elementor_Widget_Past_Events — because that
+	 * class extends \Elementor\Widget_Base, which may not be loaded yet at
+	 * the point define_elementor_hooks() runs (Elementor's own classes are
+	 * only guaranteed available once its 'elementor/widgets/register' hook
+	 * fires). This method only requires/instantiates that widget class once
+	 * the AJAX action actually fires, by which point every plugin —
+	 * including Elementor — has finished loading.
+	 *
+	 * @since    1.0.0
+	 */
+	public function ajax_load_more_past_events() {
+		require_once LABRISA_CORE_PLUGIN_DIR . 'includes/elementor/widgets/class-widget-past-events.php';
+
+		$widget = new Labrisa_Core_Elementor_Widget_Past_Events();
+		$widget->ajax_render_more();
 	}
 }

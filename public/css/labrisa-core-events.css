@@ -150,3 +150,34 @@
 .labrisa-events-pagination .page-numbers li span.page-numbers.dots {
 	border-color: transparent;
 }
+
+.labrisa-events-load-more {
+	display: flex;
+	justify-content: center;
+	margin-top: 24px;
+}
+
+.labrisa-events-load-more__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px 28px;
+	background-color: #111111;
+	color: #ffffff;
+	border: 0;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: opacity 0.2s ease;
+}
+
+.labrisa-events-load-more__btn:hover {
+	opacity: 0.85;
+}
+
+.labrisa-events-load-more__btn:disabled,
+.labrisa-events-load-more__btn--loading {
+	opacity: 0.6;
+	cursor: default;
+}

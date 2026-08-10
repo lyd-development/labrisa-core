@@ -52,6 +52,10 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 		return array( 'labrisa-core-events' );
 	}
 
+	public function get_script_depends() {
+		return array( 'labrisa-core-past-events' );
+	}
+
 	protected function register_controls() {
 		$this->register_query_controls();
 		$this->register_content_controls();
@@ -347,6 +351,35 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'pagination_method',
+			array(
+				'label'     => __( 'Pagination Method', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'classic',
+				'options'   => array(
+					'classic'   => __( 'Classic Pagination', 'labrisa-core' ),
+					'load_more' => __( 'Load More (AJAX)', 'labrisa-core' ),
+				),
+				'condition' => array(
+					'show_pagination' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'load_more_label',
+			array(
+				'label'     => __( 'Load More Label', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::TEXT,
+				'default'   => __( 'Load More', 'labrisa-core' ),
+				'condition' => array(
+					'show_pagination'   => 'yes',
+					'pagination_method' => 'load_more',
+				),
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -511,6 +544,26 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 		return 'lb_paged_' . $this->get_id();
 	}
 
+	/**
+	 * Query args shared by the initial render() and the AJAX "Load More"
+	 * handler — everything get_past_events() needs except `paged`.
+	 *
+	 * @param array $settings
+	 * @return array
+	 */
+	private function get_query_args( array $settings ) {
+		return array_merge(
+			array(
+				'posts_per_page' => $settings['posts_per_page'],
+				'orderby'        => $settings['orderby'],
+				'order'          => $settings['order'],
+				'event_types'    => $settings['event_types'],
+				'event_line_up'  => $settings['event_line_up'],
+			),
+			$this->get_date_range_query_args( $settings )
+		);
+	}
+
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
@@ -518,19 +571,9 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 		// Read-only pagination nav, not a state-changing request — no nonce needed.
 		$paged = isset( $_GET[ $pagination_var ] ) ? max( 1, absint( $_GET[ $pagination_var ] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		$query = Labrisa_Core_Events::get_past_events(
-			array_merge(
-				array(
-					'posts_per_page' => $settings['posts_per_page'],
-					'orderby'        => $settings['orderby'],
-					'order'          => $settings['order'],
-					'event_types'    => $settings['event_types'],
-					'event_line_up'  => $settings['event_line_up'],
-					'paged'          => $paged,
-				),
-				$this->get_date_range_query_args( $settings )
-			)
-		);
+		$query_args           = $this->get_query_args( $settings );
+		$query_args['paged']  = $paged;
+		$query                = Labrisa_Core_Events::get_past_events( $query_args );
 
 		if ( ! $query->have_posts() ) {
 			printf(
@@ -547,19 +590,157 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 			'labrisa-events-grid--' . $settings['layout_mode'],
 		);
 		?>
-		<div class="<?php echo esc_attr( implode( ' ', $wrapper_classes ) ); ?>">
+		<div class="labrisa-past-events">
+			<div class="<?php echo esc_attr( implode( ' ', $wrapper_classes ) ); ?>" data-labrisa-events-grid>
+				<?php
+				while ( $query->have_posts() ) :
+					$query->the_post();
+					$this->render_event_card( get_the_ID(), $settings, $gallery_id );
+				endwhile;
+				?>
+			</div>
 			<?php
-			while ( $query->have_posts() ) :
-				$query->the_post();
-				$this->render_event_card( get_the_ID(), $settings, $gallery_id );
-			endwhile;
+			if ( 'yes' === $settings['show_pagination'] ) {
+				if ( 'load_more' === $settings['pagination_method'] ) {
+					$this->render_load_more( $query, $paged, $query_args, $settings, $gallery_id );
+				} else {
+					$this->render_pagination( $query, $paged, $pagination_var );
+				}
+			}
 			?>
 		</div>
 		<?php
-		if ( 'yes' === $settings['show_pagination'] ) {
-			$this->render_pagination( $query, $paged, $pagination_var );
-		}
 		wp_reset_postdata();
+	}
+
+	/**
+	 * Render the "Load More" button. The button carries everything the AJAX
+	 * handler (ajax_render_more()) needs to fetch and render the next page
+	 * as a JSON data attribute — query args (already-resolved date range
+	 * boundaries, so the AJAX side doesn't need to re-derive them from the
+	 * raw Elementor control values) plus the handful of render() settings
+	 * render_event_card() actually reads.
+	 *
+	 * @param WP_Query $query
+	 * @param int      $paged
+	 * @param array    $query_args  From get_query_args(), without `paged`.
+	 * @param array    $settings
+	 * @param string   $gallery_id
+	 */
+	private function render_load_more( $query, $paged, array $query_args, array $settings, $gallery_id ) {
+		if ( $paged >= $query->max_num_pages ) {
+			return;
+		}
+
+		$payload = array(
+			'query'      => $query_args,
+			'render'     => array(
+				'image_size'      => $settings['image_size'],
+				'show_title'      => $settings['show_title'],
+				'show_date'       => $settings['show_date'],
+				'enable_lightbox' => $settings['enable_lightbox'],
+				'link_to_ticket'  => $settings['link_to_ticket'],
+			),
+			'gallery_id' => $gallery_id,
+		);
+		?>
+		<div class="labrisa-events-load-more">
+			<button
+				type="button"
+				class="labrisa-events-load-more__btn"
+				data-labrisa-load-more
+				data-page="<?php echo esc_attr( $paged ); ?>"
+				data-nonce="<?php echo esc_attr( wp_create_nonce( 'labrisa_core_load_more_past_events' ) ); ?>"
+				data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+				data-payload="<?php echo esc_attr( wp_json_encode( $payload ) ); ?>"
+			>
+				<?php echo esc_html( $settings['load_more_label'] ); ?>
+			</button>
+		</div>
+		<?php
+	}
+
+	/**
+	 * AJAX handler behind the "Load More" button — renders and returns the
+	 * next page of event cards as HTML. Hooked (via Labrisa_Core_Elementor::
+	 * ajax_load_more_past_events(), see include/elementor/class-labrisa-core-elementor.php)
+	 * to wp_ajax_labrisa_core_load_more_past_events and its _nopriv_ twin,
+	 * since Past Events content is public.
+	 *
+	 * @since    1.0.0
+	 */
+	public function ajax_render_more() {
+		check_ajax_referer( 'labrisa_core_load_more_past_events', 'nonce' );
+
+		$page       = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
+		$raw_query  = isset( $_POST['query'] ) ? (array) wp_unslash( $_POST['query'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- sanitized field-by-field in sanitize_ajax_query_args().
+		$raw_render = isset( $_POST['render'] ) ? (array) wp_unslash( $_POST['render'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- sanitized field-by-field in sanitize_ajax_render_args().
+		$gallery_id = isset( $_POST['gallery_id'] ) ? sanitize_html_class( wp_unslash( $_POST['gallery_id'] ) ) : '';
+
+		$query_args           = $this->sanitize_ajax_query_args( $raw_query );
+		$query_args['paged']  = $page;
+		$query                = Labrisa_Core_Events::get_past_events( $query_args );
+
+		$settings = $this->sanitize_ajax_render_args( $raw_render );
+
+		ob_start();
+		if ( $query->have_posts() ) {
+			while ( $query->have_posts() ) {
+				$query->the_post();
+				$this->render_event_card( get_the_ID(), $settings, $gallery_id );
+			}
+			wp_reset_postdata();
+		}
+		$html = ob_get_clean();
+
+		wp_send_json_success(
+			array(
+				'html'     => $html,
+				'nextPage' => $page + 1,
+				'hasMore'  => $page < (int) $query->max_num_pages,
+			)
+		);
+	}
+
+	/**
+	 * Rebuild get_past_events() query args from the AJAX request, trusting
+	 * nothing from the client beyond known-safe values/whitelisted options.
+	 *
+	 * @param array $raw
+	 * @return array
+	 */
+	private function sanitize_ajax_query_args( array $raw ) {
+		$orderby_options    = array( 'event_end_date', 'event_date', 'title', 'date' );
+		$date_range_options = array( '', 'month', '3months', '6months', 'year', 'custom' );
+
+		return array(
+			'posts_per_page'   => isset( $raw['posts_per_page'] ) ? intval( $raw['posts_per_page'] ) : 8,
+			'orderby'          => in_array( isset( $raw['orderby'] ) ? $raw['orderby'] : '', $orderby_options, true ) ? $raw['orderby'] : 'event_end_date',
+			'order'            => 'ASC' === strtoupper( (string) ( isset( $raw['order'] ) ? $raw['order'] : '' ) ) ? 'ASC' : 'DESC',
+			'event_types'      => isset( $raw['event_types'] ) ? array_map( 'absint', (array) $raw['event_types'] ) : array(),
+			'event_line_up'    => isset( $raw['event_line_up'] ) ? array_map( 'absint', (array) $raw['event_line_up'] ) : array(),
+			'date_range'       => in_array( isset( $raw['date_range'] ) ? $raw['date_range'] : '', $date_range_options, true ) ? $raw['date_range'] : '',
+			'date_range_start' => isset( $raw['date_range_start'] ) ? sanitize_text_field( $raw['date_range_start'] ) : '',
+			'date_range_end'   => isset( $raw['date_range_end'] ) ? sanitize_text_field( $raw['date_range_end'] ) : '',
+		);
+	}
+
+	/**
+	 * Rebuild the render_event_card() settings subset from the AJAX request.
+	 *
+	 * @param array $raw
+	 * @return array
+	 */
+	private function sanitize_ajax_render_args( array $raw ) {
+		$image_sizes = array_keys( $this->get_image_size_options() );
+
+		return array(
+			'image_size'      => ( isset( $raw['image_size'] ) && in_array( $raw['image_size'], $image_sizes, true ) ) ? $raw['image_size'] : 'large',
+			'show_title'      => 'yes' === ( isset( $raw['show_title'] ) ? $raw['show_title'] : '' ) ? 'yes' : '',
+			'show_date'       => 'yes' === ( isset( $raw['show_date'] ) ? $raw['show_date'] : '' ) ? 'yes' : '',
+			'enable_lightbox' => 'yes' === ( isset( $raw['enable_lightbox'] ) ? $raw['enable_lightbox'] : '' ) ? 'yes' : '',
+			'link_to_ticket'  => 'yes' === ( isset( $raw['link_to_ticket'] ) ? $raw['link_to_ticket'] : '' ) ? 'yes' : '',
+		);
 	}
 
 	/**

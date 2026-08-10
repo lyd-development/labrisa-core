@@ -218,6 +218,8 @@ class Labrisa_Core {
 		$this->loader->add_action( 'elementor/elements/categories_registered', $plugin_elementor, 'register_category' );
 		$this->loader->add_action( 'elementor/widgets/register', $plugin_elementor, 'register_widgets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_elementor, 'register_assets' );
+		$this->loader->add_action( 'wp_ajax_labrisa_core_load_more_past_events', $plugin_elementor, 'ajax_load_more_past_events' );
+		$this->loader->add_action( 'wp_ajax_nopriv_labrisa_core_load_more_past_events', $plugin_elementor, 'ajax_load_more_past_events' );
 
 	}
 
