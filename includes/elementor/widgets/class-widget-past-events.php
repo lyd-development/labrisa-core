@@ -649,7 +649,7 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 				type="button"
 				class="labrisa-events-load-more__btn"
 				data-labrisa-load-more
-				data-page="<?php echo esc_attr( $paged ); ?>"
+				data-page="<?php echo esc_attr( $paged + 1 ); ?>"
 				data-nonce="<?php echo esc_attr( wp_create_nonce( 'labrisa_core_load_more_past_events' ) ); ?>"
 				data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
 				data-payload="<?php echo esc_attr( wp_json_encode( $payload ) ); ?>"
