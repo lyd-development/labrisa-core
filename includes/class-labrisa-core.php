@@ -125,9 +125,15 @@ class Labrisa_Core {
 
 		/**
 		 * Query helpers for the "events" custom post type, shared by the
-		 * Elementor widgets, dynamic tags, and blocks below.
+		 * Elementor widgets, dynamic tags, blocks, and the CSV admin screen
+		 * below.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/post-types/class-labrisa-core-events.php';
+
+		/**
+		 * The class responsible for the Events CSV export/import admin screen.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-labrisa-core-events-csv.php';
 
 		/**
 		 * The class responsible for registering this plugin's Elementor
@@ -171,6 +177,13 @@ class Labrisa_Core {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+
+		$plugin_events_csv = new Labrisa_Core_Admin_Events_CSV();
+
+		$this->loader->add_action( 'admin_menu', $plugin_events_csv, 'register_menu' );
+		$this->loader->add_action( 'admin_post_labrisa_core_export_events', $plugin_events_csv, 'handle_export' );
+		$this->loader->add_action( 'admin_post_labrisa_core_import_events', $plugin_events_csv, 'handle_import' );
+		$this->loader->add_action( 'admin_post_labrisa_core_events_csv_sample', $plugin_events_csv, 'handle_sample' );
 
 	}
 
