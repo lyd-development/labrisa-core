@@ -100,8 +100,14 @@ class Labrisa_Core_Events {
 	 *     @type int    $paged          Page number for pagination. Default 1.
 	 *     @type string $orderby        'event_end_date', 'event_date', 'title' or 'date'. Default 'event_date'.
 	 *     @type string $order          'ASC' or 'DESC'. Default 'ASC'.
-	 *     @type array  $event_types    Term IDs to filter by in the event-types taxonomy.
-	 *     @type array  $event_line_up  Term IDs to filter by in the event-line-up taxonomy.
+	 *     @type array  $event_types       Term IDs to filter by in the event-types taxonomy.
+	 *     @type array  $event_line_up     Term IDs to filter by in the event-line-up taxonomy.
+	 *     @type string $date_range        Filter by event_date: '', 'month', '3months', '6months',
+	 *                                     'year' (rolling window ending now), or 'custom'
+	 *                                     (uses $date_range_start/$date_range_end). Default ''
+	 *                                     (no filtering).
+	 *     @type string $date_range_start  'Y-m-d H:i:s' lower bound, only used when $date_range is 'custom'.
+	 *     @type string $date_range_end    'Y-m-d H:i:s' upper bound, only used when $date_range is 'custom'.
 	 * }
 	 * @return   WP_Query
 	 */
@@ -110,12 +116,15 @@ class Labrisa_Core_Events {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'posts_per_page' => 8,
-				'paged'          => 1,
-				'orderby'        => 'event_date',
-				'order'          => 'ASC',
-				'event_types'    => array(),
-				'event_line_up'  => array(),
+				'posts_per_page'   => 8,
+				'paged'            => 1,
+				'orderby'          => 'event_date',
+				'order'            => 'ASC',
+				'event_types'      => array(),
+				'event_line_up'    => array(),
+				'date_range'       => '',
+				'date_range_start' => '',
+				'date_range_end'   => '',
 			)
 		);
 
@@ -141,6 +150,12 @@ class Labrisa_Core_Events {
 			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		}
 
+		$date_range_query = self::build_date_range_meta_query( $args['date_range'], $args['date_range_start'], $args['date_range_end'] );
+
+		if ( ! empty( $date_range_query ) ) {
+			$query_args['meta_query'] = $date_range_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		}
+
 		return new WP_Query( $query_args );
 	}
 
@@ -161,6 +176,12 @@ class Labrisa_Core_Events {
 	 *     @type array  $event_line_up       Term IDs to filter by in the event-line-up taxonomy.
 	 *     @type bool   $current_month_only  Only include events whose event_date falls within
 	 *                                       the current calendar month (site timezone). Default false.
+	 *     @type string $date_range          Filter by event_date: '', 'month', '3months', '6months',
+	 *                                       'year' (rolling window ending now), or 'custom'
+	 *                                       (uses $date_range_start/$date_range_end). Default ''
+	 *                                       (no filtering).
+	 *     @type string $date_range_start    'Y-m-d H:i:s' lower bound, only used when $date_range is 'custom'.
+	 *     @type string $date_range_end      'Y-m-d H:i:s' upper bound, only used when $date_range is 'custom'.
 	 * }
 	 * @return   WP_Query
 	 */
@@ -176,6 +197,9 @@ class Labrisa_Core_Events {
 				'event_types'         => array(),
 				'event_line_up'       => array(),
 				'current_month_only'  => false,
+				'date_range'          => '',
+				'date_range_start'    => '',
+				'date_range_end'      => '',
 			)
 		);
 
@@ -191,8 +215,7 @@ class Labrisa_Core_Events {
 		if ( $args['current_month_only'] ) {
 			$now = new DateTimeImmutable( 'now', wp_timezone() );
 
-			$meta_query['relation'] = 'AND';
-			$meta_query[]           = array(
+			$meta_query[] = array(
 				'key'     => 'event_date',
 				'value'   => array(
 					$now->modify( 'first day of this month' )->setTime( 0, 0, 0 )->format( 'Y-m-d H:i:s' ),
@@ -201,6 +224,16 @@ class Labrisa_Core_Events {
 				'compare' => 'BETWEEN',
 				'type'    => 'DATETIME',
 			);
+		}
+
+		$date_range_query = self::build_date_range_meta_query( $args['date_range'], $args['date_range_start'], $args['date_range_end'] );
+
+		if ( ! empty( $date_range_query ) ) {
+			$meta_query[] = $date_range_query[0];
+		}
+
+		if ( count( $meta_query ) > 1 ) {
+			$meta_query['relation'] = 'AND';
 		}
 
 		$query_args = array(
@@ -264,6 +297,67 @@ class Labrisa_Core_Events {
 		}
 
 		return $tax_query;
+	}
+
+	/**
+	 * Build a WP_Query-ready meta_query clause (as an array containing zero
+	 * or one clause) filtering by event_date for a "Date Range" preset.
+	 * Shared by every query method on this class that exposes a date-range
+	 * filter.
+	 *
+	 * The rolling presets ('month', '3months', '6months', 'year') are a
+	 * window ending "now" (site timezone) and starting N months/years back
+	 * — distinct from `current_month_only`, which is calendar-month-boundary
+	 * based (1st through last day of the current month) rather than rolling.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @param    string $preset  '', 'month', '3months', '6months', 'year', or 'custom'.
+	 * @param    string $start   'Y-m-d H:i:s' lower bound, only used when $preset is 'custom'.
+	 * @param    string $end     'Y-m-d H:i:s' upper bound, only used when $preset is 'custom'.
+	 * @return   array           Zero or one meta_query clause, ready to merge into a larger meta_query.
+	 */
+	private static function build_date_range_meta_query( $preset, $start = '', $end = '' ) {
+
+		if ( 'custom' === $preset ) {
+			if ( empty( $start ) || empty( $end ) ) {
+				return array();
+			}
+
+			return array(
+				array(
+					'key'     => 'event_date',
+					'value'   => array( $start, $end ),
+					'compare' => 'BETWEEN',
+					'type'    => 'DATETIME',
+				),
+			);
+		}
+
+		$intervals = array(
+			'month'   => '-1 month',
+			'3months' => '-3 months',
+			'6months' => '-6 months',
+			'year'    => '-1 year',
+		);
+
+		if ( ! isset( $intervals[ $preset ] ) ) {
+			return array();
+		}
+
+		$now = new DateTimeImmutable( 'now', wp_timezone() );
+
+		return array(
+			array(
+				'key'     => 'event_date',
+				'value'   => array(
+					$now->modify( $intervals[ $preset ] )->format( 'Y-m-d H:i:s' ),
+					$now->format( 'Y-m-d H:i:s' ),
+				),
+				'compare' => 'BETWEEN',
+				'type'    => 'DATETIME',
+			),
+		);
 	}
 
 	/**

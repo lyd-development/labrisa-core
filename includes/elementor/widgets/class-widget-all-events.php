@@ -141,6 +141,52 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'date_range',
+			array(
+				'label'     => __( 'Date Range', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'all',
+				'options'   => array(
+					'all'     => __( 'All Dates', 'labrisa-core' ),
+					'month'   => __( 'Last Month', 'labrisa-core' ),
+					'3months' => __( 'Last 3 Months', 'labrisa-core' ),
+					'6months' => __( 'Last 6 Months', 'labrisa-core' ),
+					'year'    => __( 'Last Year', 'labrisa-core' ),
+					'custom'  => __( 'Custom Range', 'labrisa-core' ),
+				),
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'date_range_start',
+			array(
+				'label'     => __( 'Start Date', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::DATE_TIME,
+				'picker_options' => array(
+					'enableTime' => false,
+				),
+				'condition' => array(
+					'date_range' => 'custom',
+				),
+			)
+		);
+
+		$this->add_control(
+			'date_range_end',
+			array(
+				'label'     => __( 'End Date', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::DATE_TIME,
+				'picker_options' => array(
+					'enableTime' => false,
+				),
+				'condition' => array(
+					'date_range' => 'custom',
+				),
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -959,16 +1005,41 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 		return array_combine( $sizes, $sizes );
 	}
 
+	/**
+	 * Turn the "Date Range" control values into the date_range/*_start/*_end
+	 * args Labrisa_Core_Events query methods expect. The DATE_TIME control
+	 * is date-only here (enableTime: false) but its stored format can still
+	 * include a time portion depending on the browser/locale, so this only
+	 * trusts the first 10 characters (Y-m-d) and appends explicit start/end
+	 * of day boundaries itself.
+	 *
+	 * @param array $settings
+	 * @return array
+	 */
+	private function get_date_range_query_args( array $settings ) {
+		$start = ! empty( $settings['date_range_start'] ) ? substr( $settings['date_range_start'], 0, 10 ) . ' 00:00:00' : '';
+		$end   = ! empty( $settings['date_range_end'] ) ? substr( $settings['date_range_end'], 0, 10 ) . ' 23:59:59' : '';
+
+		return array(
+			'date_range'       => 'all' === $settings['date_range'] ? '' : $settings['date_range'],
+			'date_range_start' => $start,
+			'date_range_end'   => $end,
+		);
+	}
+
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
 		$query = Labrisa_Core_Events::get_all_events(
-			array(
-				'posts_per_page' => $settings['posts_per_page'],
-				'orderby'        => $settings['orderby'],
-				'order'          => $settings['order'],
-				'event_types'    => $settings['event_types'],
-				'event_line_up'  => $settings['event_line_up'],
+			array_merge(
+				array(
+					'posts_per_page' => $settings['posts_per_page'],
+					'orderby'        => $settings['orderby'],
+					'order'          => $settings['order'],
+					'event_types'    => $settings['event_types'],
+					'event_line_up'  => $settings['event_line_up'],
+				),
+				$this->get_date_range_query_args( $settings )
 			)
 		);
 

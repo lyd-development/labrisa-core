@@ -134,6 +134,52 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'date_range',
+			array(
+				'label'     => __( 'Date Range', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'all',
+				'options'   => array(
+					'all'     => __( 'All Dates', 'labrisa-core' ),
+					'month'   => __( 'Last Month', 'labrisa-core' ),
+					'3months' => __( 'Last 3 Months', 'labrisa-core' ),
+					'6months' => __( 'Last 6 Months', 'labrisa-core' ),
+					'year'    => __( 'Last Year', 'labrisa-core' ),
+					'custom'  => __( 'Custom Range', 'labrisa-core' ),
+				),
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'date_range_start',
+			array(
+				'label'     => __( 'Start Date', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::DATE_TIME,
+				'picker_options' => array(
+					'enableTime' => false,
+				),
+				'condition' => array(
+					'date_range' => 'custom',
+				),
+			)
+		);
+
+		$this->add_control(
+			'date_range_end',
+			array(
+				'label'     => __( 'End Date', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::DATE_TIME,
+				'picker_options' => array(
+					'enableTime' => false,
+				),
+				'condition' => array(
+					'date_range' => 'custom',
+				),
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -290,6 +336,17 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'show_pagination',
+			array(
+				'label'       => __( 'Pagination', 'labrisa-core' ),
+				'description' => __( 'Only shown when there is more than one page of results (based on Number of Events).', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'separator'   => 'before',
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -420,16 +477,58 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 		return array_combine( $sizes, $sizes );
 	}
 
+	/**
+	 * Turn the "Date Range" control values into the date_range/*_start/*_end
+	 * args Labrisa_Core_Events query methods expect. The DATE_TIME control
+	 * is date-only here (enableTime: false) but its stored format can still
+	 * include a time portion depending on the browser/locale, so this only
+	 * trusts the first 10 characters (Y-m-d) and appends explicit start/end
+	 * of day boundaries itself.
+	 *
+	 * @param array $settings
+	 * @return array
+	 */
+	private function get_date_range_query_args( array $settings ) {
+		$start = ! empty( $settings['date_range_start'] ) ? substr( $settings['date_range_start'], 0, 10 ) . ' 00:00:00' : '';
+		$end   = ! empty( $settings['date_range_end'] ) ? substr( $settings['date_range_end'], 0, 10 ) . ' 23:59:59' : '';
+
+		return array(
+			'date_range'       => 'all' === $settings['date_range'] ? '' : $settings['date_range'],
+			'date_range_start' => $start,
+			'date_range_end'   => $end,
+		);
+	}
+
+	/**
+	 * GET query var used for this widget instance's pagination, namespaced
+	 * by widget ID so multiple Past Events widgets on one page (or this
+	 * widget alongside WordPress's own paged content) don't fight over the
+	 * same param.
+	 *
+	 * @return string
+	 */
+	private function get_pagination_query_var() {
+		return 'lb_paged_' . $this->get_id();
+	}
+
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
+		$pagination_var = $this->get_pagination_query_var();
+		// Read-only pagination nav, not a state-changing request — no nonce needed.
+		$paged = isset( $_GET[ $pagination_var ] ) ? max( 1, absint( $_GET[ $pagination_var ] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
 		$query = Labrisa_Core_Events::get_past_events(
-			array(
-				'posts_per_page' => $settings['posts_per_page'],
-				'orderby'        => $settings['orderby'],
-				'order'          => $settings['order'],
-				'event_types'    => $settings['event_types'],
-				'event_line_up'  => $settings['event_line_up'],
+			array_merge(
+				array(
+					'posts_per_page' => $settings['posts_per_page'],
+					'orderby'        => $settings['orderby'],
+					'order'          => $settings['order'],
+					'event_types'    => $settings['event_types'],
+					'event_line_up'  => $settings['event_line_up'],
+					'paged'          => $paged,
+				),
+				$this->get_date_range_query_args( $settings )
 			)
 		);
 
@@ -457,7 +556,43 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 			?>
 		</div>
 		<?php
+		if ( 'yes' === $settings['show_pagination'] ) {
+			$this->render_pagination( $query, $paged, $pagination_var );
+		}
 		wp_reset_postdata();
+	}
+
+	/**
+	 * @param WP_Query $query
+	 * @param int      $paged
+	 * @param string   $pagination_var
+	 */
+	private function render_pagination( $query, $paged, $pagination_var ) {
+		if ( $query->max_num_pages <= 1 ) {
+			return;
+		}
+
+		$base_url = remove_query_arg( $pagination_var );
+
+		$links = paginate_links(
+			array(
+				'base'      => add_query_arg( $pagination_var, '%#%', $base_url ),
+				'format'    => '',
+				'current'   => $paged,
+				'total'     => (int) $query->max_num_pages,
+				'prev_text' => __( '&laquo; Prev', 'labrisa-core' ),
+				'next_text' => __( 'Next &raquo;', 'labrisa-core' ),
+				'type'      => 'list',
+			)
+		);
+
+		if ( $links ) {
+			printf(
+				'<nav class="labrisa-events-pagination" aria-label="%s">%s</nav>',
+				esc_attr__( 'Events pagination', 'labrisa-core' ),
+				$links // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- paginate_links() output is already escaped.
+			);
+		}
 	}
 
 	/**
