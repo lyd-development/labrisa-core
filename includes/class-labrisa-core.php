@@ -177,6 +177,7 @@ class Labrisa_Core {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'set_events_admin_default_order' );
 
 		$plugin_events_csv = new Labrisa_Core_Admin_Events_CSV();
 
