@@ -475,6 +475,335 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 		);
 
 		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_pagination',
+			array(
+				'label'     => __( 'Pagination', 'labrisa-core' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'show_pagination'   => 'yes',
+					'pagination_method' => 'classic',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'pagination_typography',
+				'selector' => '{{WRAPPER}} .labrisa-events-pagination li a.page-numbers, {{WRAPPER}} .labrisa-events-pagination li span.page-numbers',
+			)
+		);
+
+		$this->add_control(
+			'pagination_radius',
+			array(
+				'label'      => __( 'Border Radius', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 50,
+					),
+					'%'  => array(
+						'min' => 0,
+						'max' => 50,
+					),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-events-pagination li a.page-numbers, {{WRAPPER}} .labrisa-events-pagination li span.page-numbers' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_pagination_style' );
+
+		$this->start_controls_tab(
+			'tab_pagination_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'pagination_color',
+			array(
+				'label'     => __( 'Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination li a.page-numbers, {{WRAPPER}} .labrisa-events-pagination li span.page-numbers' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pagination_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination li a.page-numbers, {{WRAPPER}} .labrisa-events-pagination li span.page-numbers' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pagination_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination li a.page-numbers, {{WRAPPER}} .labrisa-events-pagination li span.page-numbers' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pagination_heading_current',
+			array(
+				'label'     => __( 'Current Page', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'pagination_current_color',
+			array(
+				'label'     => __( 'Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination li span.page-numbers.current' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pagination_current_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination li span.page-numbers.current' => 'background-color: {{VALUE}}; border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_pagination_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'pagination_hover_color',
+			array(
+				'label'     => __( 'Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination a.page-numbers:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pagination_hover_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination a.page-numbers:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pagination_hover_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-pagination a.page-numbers:hover' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_load_more',
+			array(
+				'label'     => __( 'Load More Button', 'labrisa-core' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'show_pagination'   => 'yes',
+					'pagination_method' => 'load_more',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'load_more_typography',
+				'selector' => '{{WRAPPER}} .labrisa-events-load-more__btn',
+			)
+		);
+
+		$this->add_responsive_control(
+			'load_more_padding',
+			array(
+				'label'      => __( 'Padding', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'load_more_radius',
+			array(
+				'label'      => __( 'Border Radius', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 50,
+					),
+					'%'  => array(
+						'min' => 0,
+						'max' => 50,
+					),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'load_more_border_width',
+			array(
+				'label'      => __( 'Border Width', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 10,
+					),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn' => 'border-width: {{SIZE}}{{UNIT}}; border-style: solid;',
+				),
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_load_more_style' );
+
+		$this->start_controls_tab(
+			'tab_load_more_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'load_more_color',
+			array(
+				'label'     => __( 'Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'load_more_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'load_more_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_load_more_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'load_more_hover_color',
+			array(
+				'label'     => __( 'Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'load_more_hover_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'load_more_hover_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-events-load-more__btn:hover' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->end_controls_section();
 	}
 
 	/**
