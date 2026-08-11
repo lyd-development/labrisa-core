@@ -1220,7 +1220,7 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 			'place'     => $meta['event_place'],
 			'date'      => $date_display,
 			'image'     => $image_id ? wp_get_attachment_image_url( $image_id, 'large' ) : '',
-			'terms'     => ! empty( $meta['event_terms_and_conditions'] ) ? wp_kses_post( wpautop( $meta['event_terms_and_conditions'] ) ) : '',
+			'terms'     => Labrisa_Core_Events::get_event_content( $post_id ),
 			'ticketUrl' => $meta['event_ticket_url'],
 		);
 

@@ -437,11 +437,50 @@ class Labrisa_Core_Events {
 	 */
 	public static function get_event_meta( $post_id ) {
 		return array(
-			'event_place'                => get_post_meta( $post_id, 'event_place', true ),
-			'event_date'                 => get_post_meta( $post_id, 'event_date', true ),
-			'event_end_date'             => get_post_meta( $post_id, 'event_end_date', true ),
-			'event_ticket_url'           => get_post_meta( $post_id, 'event_ticket_url', true ),
-			'event_terms_and_conditions' => get_post_meta( $post_id, 'event_terms_and_conditions', true ),
+			'event_place'      => get_post_meta( $post_id, 'event_place', true ),
+			'event_date'       => get_post_meta( $post_id, 'event_date', true ),
+			'event_end_date'   => get_post_meta( $post_id, 'event_end_date', true ),
+			'event_ticket_url' => get_post_meta( $post_id, 'event_ticket_url', true ),
 		);
+	}
+
+	/**
+	 * Get an event's terms & conditions / details content, rendered the same
+	 * way WordPress renders normal post content (paragraphs, blocks,
+	 * shortcodes, embeds all applied via the `the_content` filter chain),
+	 * then sanitized for safe HTML output. Replaces the old
+	 * `event_terms_and_conditions` ACF field — this content now lives in
+	 * the event's regular post_content.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $post_id    Event post ID.
+	 * @return   string             Rendered, sanitized HTML. Empty string if the post has no content.
+	 */
+	public static function get_event_content( $post_id ) {
+		$event_post = get_post( $post_id );
+
+		if ( ! $event_post || '' === $event_post->post_content ) {
+			return '';
+		}
+
+		// Some `the_content` filters (galleries/shortcodes/embeds that key
+		// off the "current" post) expect the global $post to be set — swap
+		// it in temporarily rather than assuming callers are already inside
+		// The Loop (this is called from AJAX handlers, which aren't).
+		global $post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$original_post = $post;
+		$post          = $event_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $post );
+
+		$content = apply_filters( 'the_content', $event_post->post_content );
+
+		if ( $original_post ) {
+			$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			setup_postdata( $post );
+		} else {
+			wp_reset_postdata();
+		}
+
+		return wp_kses_post( $content );
 	}
 }

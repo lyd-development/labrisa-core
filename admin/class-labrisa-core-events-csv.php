@@ -43,7 +43,9 @@ class Labrisa_Core_Admin_Events_CSV {
 	 * Column order used by both export and import. Column names match the
 	 * ACF field names on the "events" post type 1:1 (see
 	 * sources/acf-export-2026-08-05.json) except for the WordPress-native
-	 * ID/post_title/post_content/post_status columns.
+	 * ID/post_title/post_content/post_status columns. `post_content` also
+	 * doubles as the event's terms & conditions / details content — there is
+	 * no separate ACF field for that anymore, it's just the post body.
 	 *
 	 * @var string[]
 	 */
@@ -61,7 +63,6 @@ class Labrisa_Core_Admin_Events_CSV {
 		'event_banner_image',
 		'event_past_image_square',
 		'event_ticket_url',
-		'event_terms_and_conditions',
 	);
 
 	/**
@@ -140,6 +141,7 @@ class Labrisa_Core_Admin_Events_CSV {
 			</p>
 			<ul style="list-style:disc;margin-left:20px;">
 				<li><?php esc_html_e( 'Leave ID empty to create a new event; fill it in to update an existing one.', 'labrisa-core' ); ?></li>
+				<li><?php esc_html_e( 'post_content is the event\'s regular post body — it also doubles as the "Explore" popup\'s terms & conditions / details content.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'event_line_up supports multiple terms separated by a pipe character, e.g. "Term A|Term B". Terms that do not exist yet are created automatically.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'post_date, event_date, and event_end_date must be in "Y-m-d H:i:s" format, e.g. 2026-08-15 21:00:00. Leave post_date empty to use the current time on new events, or keep the existing published date when updating.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'event_banner_image and event_past_image_square accept either an image URL (downloaded into the media library) or an existing attachment ID.', 'labrisa-core' ); ?></li>
@@ -222,7 +224,7 @@ class Labrisa_Core_Admin_Events_CSV {
 			array(
 				'',
 				'La Brisa Presents Fantasia 2',
-				'An evening of music, light, and atmosphere.',
+				'<p>An evening of music, light, and atmosphere.</p><p>21+ event. Doors 9PM.</p>',
 				'publish',
 				'2026-08-01 10:00:00',
 				'Party',
@@ -233,7 +235,6 @@ class Labrisa_Core_Admin_Events_CSV {
 				'https://example.com/banner.jpg',
 				'https://example.com/square.jpg',
 				'https://tickets.example.com/fantasia-2',
-				'<p>21+ event. Doors 9PM.</p>',
 			)
 		);
 		fclose( $output );
@@ -413,7 +414,6 @@ class Labrisa_Core_Admin_Events_CSV {
 		update_post_meta( $post_id, 'event_date', isset( $data['event_date'] ) ? sanitize_text_field( $data['event_date'] ) : '' );
 		update_post_meta( $post_id, 'event_end_date', isset( $data['event_end_date'] ) ? sanitize_text_field( $data['event_end_date'] ) : '' );
 		update_post_meta( $post_id, 'event_ticket_url', isset( $data['event_ticket_url'] ) ? esc_url_raw( $data['event_ticket_url'] ) : '' );
-		update_post_meta( $post_id, 'event_terms_and_conditions', isset( $data['event_terms_and_conditions'] ) ? wp_kses_post( $data['event_terms_and_conditions'] ) : '' );
 
 		if ( ! empty( $data['event_banner_image'] ) ) {
 			$this->set_image_meta( $post_id, 'event_banner_image', $data['event_banner_image'] );
@@ -487,7 +487,6 @@ class Labrisa_Core_Admin_Events_CSV {
 			$banner_id ? wp_get_attachment_url( $banner_id ) : '',
 			$square_id ? wp_get_attachment_url( $square_id ) : '',
 			$meta['event_ticket_url'],
-			$meta['event_terms_and_conditions'],
 		);
 	}
 
