@@ -48,6 +48,11 @@ class Labrisa_Core_Events {
 	const TAX_EVENT_BRANDS = 'event-brands';
 
 	/**
+	 * The "Is Regular Event?" (event_is_regular_event) ACF field's meta key.
+	 */
+	const META_IS_REGULAR_EVENT = 'event_is_regular_event';
+
+	/**
 	 * Query events whose event_end_date has already passed, according to the
 	 * site's configured timezone (Settings > General).
 	 *
@@ -95,7 +100,8 @@ class Labrisa_Core_Events {
 
 	/**
 	 * Query every published event regardless of date — no event_end_date
-	 * filtering at all.
+	 * filtering at all. Always excludes "regular" events (event_is_regular_event
+	 * true) — see get_regular_events() for those.
 	 *
 	 * @since    1.0.0
 	 * @param    array    $args    {
@@ -124,6 +130,37 @@ class Labrisa_Core_Events {
 	 * @return   WP_Query
 	 */
 	public static function get_all_events( array $args = array() ) {
+		return self::query_all_events( $args, false );
+	}
+
+	/**
+	 * Query only "regular" events — those with the event_is_regular_event
+	 * ACF field switched on. Same query shape/args as get_all_events()
+	 * (posts_per_page/orderby/order/taxonomy filters/date range/
+	 * start_from_current_month all behave identically), just scoped to
+	 * regular events instead of excluding them.
+	 *
+	 * @since    1.0.0
+	 * @param    array    $args    See get_all_events() for the list of supported keys.
+	 * @return   WP_Query
+	 */
+	public static function get_regular_events( array $args = array() ) {
+		return self::query_all_events( $args, true );
+	}
+
+	/**
+	 * Shared query builder behind get_all_events()/get_regular_events() —
+	 * identical except for whether "regular" events (event_is_regular_event)
+	 * are the only thing included or the only thing excluded.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @param    array    $args          See get_all_events() for the list of supported keys.
+	 * @param    bool     $only_regular  True to include only regular events (get_regular_events()),
+	 *                                   false to exclude them (get_all_events()).
+	 * @return   WP_Query
+	 */
+	private static function query_all_events( array $args, $only_regular ) {
 
 		$args = wp_parse_args(
 			$args,
@@ -164,11 +201,19 @@ class Labrisa_Core_Events {
 			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		}
 
+		$meta_query = array( self::build_regular_event_meta_query( $only_regular ) );
+
 		$date_range_query = self::build_date_range_meta_query( $args['date_range'], $args['date_range_start'], $args['date_range_end'] );
 
 		if ( ! empty( $date_range_query ) ) {
-			$query_args['meta_query'] = $date_range_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			$meta_query[] = $date_range_query[0];
 		}
+
+		if ( count( $meta_query ) > 1 ) {
+			$meta_query['relation'] = 'AND';
+		}
+
+		$query_args['meta_query'] = $meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 
 		$query = new WP_Query( $query_args );
 
@@ -291,6 +336,10 @@ class Labrisa_Core_Events {
 		if ( ! empty( $date_range_query ) ) {
 			$meta_query[] = $date_range_query[0];
 		}
+
+		// Past/Upcoming Events always exclude "regular" events —
+		// get_regular_events() is the only query that surfaces those.
+		$meta_query[] = self::build_regular_event_meta_query( false );
 
 		if ( count( $meta_query ) > 1 ) {
 			$meta_query['relation'] = 'AND';
@@ -425,6 +474,50 @@ class Labrisa_Core_Events {
 				),
 				'compare' => 'BETWEEN',
 				'type'    => 'DATETIME',
+			),
+		);
+	}
+
+	/**
+	 * Build a WP_Query-ready meta_query clause including or excluding
+	 * "regular" events (event_is_regular_event). Shared by every query
+	 * method on this class — get_past_events()/get_upcoming_events()/
+	 * get_all_events() always exclude regular events; get_regular_events()
+	 * is the only one that includes them (and only them).
+	 *
+	 * Excluding uses a `NOT EXISTS OR != '1'` pair rather than a plain
+	 * `!=` comparison: WP_Query's meta_query LEFT JOINs the postmeta table,
+	 * so for events that never had this field saved at all (no row),
+	 * `meta_value != '1'` evaluates to SQL NULL (not TRUE) and would
+	 * silently exclude them too — the explicit `NOT EXISTS` branch is what
+	 * keeps "never set" events included as non-regular.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @param    bool  $only_regular  True to match only regular events, false to exclude them.
+	 * @return   array                One meta_query clause (itself possibly a nested
+	 *                                 relation=>'OR' group), ready to merge into a larger meta_query.
+	 */
+	private static function build_regular_event_meta_query( $only_regular ) {
+
+		if ( $only_regular ) {
+			return array(
+				'key'     => self::META_IS_REGULAR_EVENT,
+				'value'   => '1',
+				'compare' => '=',
+			);
+		}
+
+		return array(
+			'relation' => 'OR',
+			array(
+				'key'     => self::META_IS_REGULAR_EVENT,
+				'compare' => 'NOT EXISTS',
+			),
+			array(
+				'key'     => self::META_IS_REGULAR_EVENT,
+				'value'   => '1',
+				'compare' => '!=',
 			),
 		);
 	}

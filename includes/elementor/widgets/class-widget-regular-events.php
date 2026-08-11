@@ -1,0 +1,1268 @@
+<?php
+
+/**
+ * Elementor "Regular Events" widget.
+ *
+ * Identical to the All Events widget (same autoplaying, infinite-loop Swiper
+ * carousel of event_banner_image, same "Book Now"/"Explore" popup, same
+ * controls) except it queries only events with the event_is_regular_event
+ * ACF field switched on, via Labrisa_Core_Events::get_regular_events() —
+ * All Events/Upcoming Events/Past Events all exclude those events instead.
+ *
+ * @link       https://lydbaligroup.com
+ * @since      1.0.0
+ *
+ * @package    Labrisa_Core
+ * @subpackage Labrisa_Core/includes/elementor/widgets
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * Class Labrisa_Core_Elementor_Widget_Regular_Events
+ *
+ * @since      1.0.0
+ * @package    Labrisa_Core
+ * @subpackage Labrisa_Core/includes/elementor/widgets
+ */
+class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Base {
+
+	public function get_name() {
+		return 'labrisa-regular-events';
+	}
+
+	public function get_title() {
+		return __( 'Regular Events', 'labrisa-core' );
+	}
+
+	public function get_icon() {
+		return 'eicon-calendar';
+	}
+
+	public function get_categories() {
+		return array( Labrisa_Core_Elementor::CATEGORY );
+	}
+
+	public function get_keywords() {
+		return array( 'event', 'events', 'regular events', 'recurring', 'carousel', 'marquee', 'autoplay', 'slider', 'popup' );
+	}
+
+	public function get_style_depends() {
+		return array( 'labrisa-core-regular-events' );
+	}
+
+	public function get_script_depends() {
+		return array( 'labrisa-core-regular-events' );
+	}
+
+	protected function register_controls() {
+		$this->register_query_controls();
+		$this->register_content_controls();
+		$this->register_marquee_controls();
+		$this->register_style_controls();
+	}
+
+	/**
+	 * Content Tab: which events to pull in.
+	 */
+	protected function register_query_controls() {
+		$this->start_controls_section(
+			'section_query',
+			array(
+				'label' => __( 'Query', 'labrisa-core' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'posts_per_page',
+			array(
+				'label'       => __( 'Number of Events', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::NUMBER,
+				'default'     => -1,
+				'min'         => -1,
+				'max'         => 100,
+				'description' => __( 'Use -1 to show all regular events.', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'orderby',
+			array(
+				'label'   => __( 'Order By', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SELECT,
+				'default' => 'event_date',
+				'options' => array(
+					'event_date'     => __( 'Event Start Date', 'labrisa-core' ),
+					'event_end_date' => __( 'Event End Date', 'labrisa-core' ),
+					'title'          => __( 'Title', 'labrisa-core' ),
+					'date'           => __( 'Published Date', 'labrisa-core' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'order',
+			array(
+				'label'   => __( 'Order', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SELECT,
+				'default' => 'ASC',
+				'options' => array(
+					'ASC'  => __( 'Earliest First', 'labrisa-core' ),
+					'DESC' => __( 'Latest First', 'labrisa-core' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'start_from_current_month',
+			array(
+				'label'       => __( 'Start From Current Month', 'labrisa-core' ),
+				'description' => __( 'Show events from this month onward first (soonest first, like Upcoming Events), then continue into later months — older events are moved to the end instead of the start.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'condition'   => array(
+					'orderby' => 'event_date',
+					'order'   => 'ASC',
+				),
+			)
+		);
+
+		$this->add_control(
+			'event_types',
+			array(
+				'label'       => __( 'Include Event Type', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'default'     => array(),
+				'options'     => $this->get_taxonomy_options( Labrisa_Core_Events::TAX_EVENT_TYPES ),
+			)
+		);
+
+		$this->add_control(
+			'event_line_up',
+			array(
+				'label'       => __( 'Include Line Up', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'default'     => array(),
+				'options'     => $this->get_taxonomy_options( Labrisa_Core_Events::TAX_EVENT_LINE_UP ),
+			)
+		);
+
+		$this->add_control(
+			'event_brands',
+			array(
+				'label'       => __( 'Include Brand', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'default'     => array(),
+				'options'     => $this->get_taxonomy_options( Labrisa_Core_Events::TAX_EVENT_BRANDS ),
+			)
+		);
+
+		$this->add_control(
+			'date_range',
+			array(
+				'label'     => __( 'Date Range', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'all',
+				'options'   => array(
+					'all'     => __( 'All Dates', 'labrisa-core' ),
+					'month'   => __( 'Last Month', 'labrisa-core' ),
+					'3months' => __( 'Last 3 Months', 'labrisa-core' ),
+					'6months' => __( 'Last 6 Months', 'labrisa-core' ),
+					'year'    => __( 'Last Year', 'labrisa-core' ),
+					'custom'  => __( 'Custom Range', 'labrisa-core' ),
+				),
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'date_range_start',
+			array(
+				'label'     => __( 'Start Date', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::DATE_TIME,
+				'picker_options' => array(
+					'enableTime' => false,
+				),
+				'condition' => array(
+					'date_range' => 'custom',
+				),
+			)
+		);
+
+		$this->add_control(
+			'date_range_end',
+			array(
+				'label'     => __( 'End Date', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::DATE_TIME,
+				'picker_options' => array(
+					'enableTime' => false,
+				),
+				'condition' => array(
+					'date_range' => 'custom',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Content Tab: how each slide is displayed.
+	 */
+	protected function register_content_controls() {
+		$this->start_controls_section(
+			'section_content',
+			array(
+				'label' => __( 'Content', 'labrisa-core' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'image_size',
+			array(
+				'label'   => __( 'Image Size', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SELECT,
+				'default' => 'large',
+				'options' => $this->get_image_size_options(),
+			)
+		);
+
+		$this->add_control(
+			'show_title',
+			array(
+				'label'   => __( 'Show Event Title', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'show_date',
+			array(
+				'label'   => __( 'Show Event Date', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'show_place',
+			array(
+				'label'   => __( 'Show Event Place', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'heading_buttons',
+			array(
+				'label'     => __( 'Buttons', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'show_book_now',
+			array(
+				'label'       => __( 'Show "Book Now" Button', 'labrisa-core' ),
+				'description' => __( 'Only shown on slides that have a Ticket URL set.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'book_now_label',
+			array(
+				'label'     => __( 'Book Now Label', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::TEXT,
+				'default'   => __( 'Book Now', 'labrisa-core' ),
+				'condition' => array(
+					'show_book_now' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_explore',
+			array(
+				'label'   => __( 'Show "Explore More" Button', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'explore_label',
+			array(
+				'label'     => __( 'Explore More Label', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::TEXT,
+				'default'   => __( 'Explore More', 'labrisa-core' ),
+				'condition' => array(
+					'show_explore' => 'yes',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Content Tab: Swiper carousel controls, including autoplay.
+	 */
+	protected function register_marquee_controls() {
+		$this->start_controls_section(
+			'section_marquee',
+			array(
+				'label' => __( 'Carousel', 'labrisa-core' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'enable_autoplay',
+			array(
+				'label'   => __( 'Autoplay', 'labrisa-core' ),
+				'type'    => \Elementor\Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'autoplay_speed',
+			array(
+				'label'       => __( 'Scroll Speed (ms per card)', 'labrisa-core' ),
+				'description' => __( 'This is a continuous marquee, not a pause-then-advance autoplay — the carousel glides non-stop. Lower is faster.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::NUMBER,
+				'default'     => 3000,
+				'min'         => 500,
+				'max'         => 10000,
+				'step'        => 100,
+				'condition'   => array(
+					'enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pause_on_hover',
+			array(
+				'label'     => __( 'Pause on Hover', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array(
+					'enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'enable_navigation',
+			array(
+				'label'     => __( 'Navigation Arrows', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'loop',
+			array(
+				'label'       => __( 'Infinite Loop', 'labrisa-core' ),
+				'description' => __( 'Wrap back to the first/last event when navigating or autoplaying past an edge.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+			)
+		);
+
+		$this->add_responsive_control(
+			'columns',
+			array(
+				'label'          => __( 'Columns', 'labrisa-core' ),
+				'type'           => \Elementor\Controls_Manager::SELECT,
+				'default'        => '4',
+				'tablet_default' => '3',
+				'mobile_default' => '2',
+				'options'        => array(
+					'1' => '1',
+					'2' => '2',
+					'3' => '3',
+					'4' => '4',
+					'5' => '5',
+					'6' => '6',
+				),
+				'selectors'      => array(
+					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-columns: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'gap',
+			array(
+				'label'      => __( 'Gap', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 80,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 24,
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-gap: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'image_ratio',
+			array(
+				'label'     => __( 'Image Ratio', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => '1.33',
+				'options'   => array(
+					'1'    => '1:1',
+					'0.8'  => '4:5',
+					'1.33' => '4:3',
+					'1.78' => '16:9',
+					'auto' => __( 'Original', 'labrisa-core' ),
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee' => '--labrisa-marquee-ratio: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'enable_offset',
+			array(
+				'label'       => __( 'Enable Offset', 'labrisa-core' ),
+				'description' => __( 'Peek the next card at the right edge only — the left edge always stays flush.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => '',
+				'separator'   => 'before',
+			)
+		);
+
+		$this->add_control(
+			'offset',
+			array(
+				'label'       => __( 'Peek Amount', 'labrisa-core' ),
+				'description' => __( 'How much of the next card peeks in on the right. E.g. with 3 Columns and 0.5, 3.5 cards are visible.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SLIDER,
+				'size_units'  => array( 'px' ),
+				'range'       => array(
+					'px' => array(
+						'min'  => 0.1,
+						'max'  => 1,
+						'step' => 0.05,
+					),
+				),
+				'default'     => array(
+					'unit' => 'px',
+					'size' => 0.5,
+				),
+				'condition'   => array(
+					'enable_offset' => 'yes',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Style Tab.
+	 */
+	protected function register_style_controls() {
+		$this->start_controls_section(
+			'section_style_image',
+			array(
+				'label' => __( 'Image', 'labrisa-core' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'image_radius',
+			array(
+				'label'      => __( 'Border Radius', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 100,
+					),
+					'%'  => array(
+						'min' => 0,
+						'max' => 50,
+					),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-event-slide__media' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_image_effects' );
+
+		$this->start_controls_tab(
+			'tab_image_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'image_overlay_color',
+			array(
+				'label'     => __( 'Overlay Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => 'rgba(0,0,0,0)',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__overlay' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_image_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'image_hover_overlay_color',
+			array(
+				'label'     => __( 'Overlay Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => 'rgba(0,0,0,0.3)',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__overlay' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'image_hover_scale',
+			array(
+				'label'      => __( 'Zoom Scale', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array(
+						'min'  => 1,
+						'max'  => 1.5,
+						'step' => 0.01,
+					),
+				),
+				'default'    => array(
+					'unit' => 'px',
+					'size' => 1.05,
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__image' => 'transform: scale({{SIZE}});',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_navigation',
+			array(
+				'label'     => __( 'Navigation', 'labrisa-core' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'enable_navigation' => 'yes',
+				),
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_nav_style' );
+
+		$this->start_controls_tab(
+			'tab_nav_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'nav_color',
+			array(
+				'label'     => __( 'Arrow Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => 'rgba(0,0,0,0.15)',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_nav_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'nav_hover_color',
+			array(
+				'label'     => __( 'Arrow Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_hover_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'nav_hover_border_color',
+			array(
+				'label'     => __( 'Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-marquee__nav-btn:hover' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_content',
+			array(
+				'label' => __( 'Title & Meta', 'labrisa-core' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'title_typography',
+				'selector' => '{{WRAPPER}} .labrisa-event-slide__title',
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_content_style' );
+
+		$this->start_controls_tab(
+			'tab_content_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'title_color',
+			array(
+				'label'     => __( 'Title Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__title' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'meta_color',
+			array(
+				'label'     => __( 'Date & Place Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => 'rgba(255,255,255,0.8)',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__meta' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_content_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'title_hover_color',
+			array(
+				'label'     => __( 'Title Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__title' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'meta_hover_color',
+			array(
+				'label'     => __( 'Date & Place Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide:hover .labrisa-event-slide__meta' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_buttons',
+			array(
+				'label' => __( 'Buttons', 'labrisa-core' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'buttons_typography',
+				'selector' => '{{WRAPPER}} .labrisa-event-slide__btn',
+			)
+		);
+
+		$this->start_controls_tabs( 'tabs_buttons_style' );
+
+		$this->start_controls_tab(
+			'tab_buttons_normal',
+			array(
+				'label' => __( 'Normal', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'book_now_bg_color',
+			array(
+				'label'     => __( 'Book Now Background', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--primary' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'book_now_text_color',
+			array(
+				'label'     => __( 'Book Now Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--primary' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'explore_text_color',
+			array(
+				'label'     => __( 'Explore More Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--secondary' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'explore_border_color',
+			array(
+				'label'     => __( 'Explore More Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => 'rgba(255,255,255,0.6)',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--secondary' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->start_controls_tab(
+			'tab_buttons_hover',
+			array(
+				'label' => __( 'Hover', 'labrisa-core' ),
+			)
+		);
+
+		$this->add_control(
+			'book_now_hover_bg_color',
+			array(
+				'label'     => __( 'Book Now Background', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--primary:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'book_now_hover_text_color',
+			array(
+				'label'     => __( 'Book Now Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--primary:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'explore_hover_text_color',
+			array(
+				'label'     => __( 'Explore More Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--secondary:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'explore_hover_border_color',
+			array(
+				'label'     => __( 'Explore More Border Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn--secondary:hover' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
+
+		$this->add_control(
+			'buttons_radius',
+			array(
+				'label'      => __( 'Button Border Radius', 'labrisa-core' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 50,
+					),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .labrisa-event-slide__btn' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_popup',
+			array(
+				'label'     => __( 'Explore Popup', 'labrisa-core' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array(
+					'show_explore' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'popup_bg_color',
+			array(
+				'label'     => __( 'Background Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-modal__dialog' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'popup_title_color',
+			array(
+				'label'     => __( 'Title Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-modal__title' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'popup_cta_bg_color',
+			array(
+				'label'     => __( 'CTA Button Background', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-modal__cta' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'popup_cta_text_color',
+			array(
+				'label'     => __( 'CTA Button Text Color', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-event-modal__cta' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * @param string $taxonomy
+	 * @return array term_id => name
+	 */
+	private function get_taxonomy_options( $taxonomy ) {
+		$options = array();
+
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+			)
+		);
+
+		if ( ! is_wp_error( $terms ) ) {
+			foreach ( $terms as $term ) {
+				$options[ $term->term_id ] = $term->name;
+			}
+		}
+
+		return $options;
+	}
+
+	/**
+	 * @return array size_name => size_name
+	 */
+	private function get_image_size_options() {
+		$sizes   = get_intermediate_image_sizes();
+		$sizes[] = 'full';
+
+		return array_combine( $sizes, $sizes );
+	}
+
+	/**
+	 * Turn the "Date Range" control values into the date_range/*_start/*_end
+	 * args Labrisa_Core_Events query methods expect. The DATE_TIME control
+	 * is date-only here (enableTime: false) but its stored format can still
+	 * include a time portion depending on the browser/locale, so this only
+	 * trusts the first 10 characters (Y-m-d) and appends explicit start/end
+	 * of day boundaries itself.
+	 *
+	 * @param array $settings
+	 * @return array
+	 */
+	private function get_date_range_query_args( array $settings ) {
+		$start = ! empty( $settings['date_range_start'] ) ? substr( $settings['date_range_start'], 0, 10 ) . ' 00:00:00' : '';
+		$end   = ! empty( $settings['date_range_end'] ) ? substr( $settings['date_range_end'], 0, 10 ) . ' 23:59:59' : '';
+
+		return array(
+			'date_range'       => 'all' === $settings['date_range'] ? '' : $settings['date_range'],
+			'date_range_start' => $start,
+			'date_range_end'   => $end,
+		);
+	}
+
+	protected function render() {
+		$settings = $this->get_settings_for_display();
+
+		$query = Labrisa_Core_Events::get_regular_events(
+			array_merge(
+				array(
+					'posts_per_page'           => $settings['posts_per_page'],
+					'orderby'                  => $settings['orderby'],
+					'order'                    => $settings['order'],
+					'event_types'              => $settings['event_types'],
+					'event_line_up'            => $settings['event_line_up'],
+					'event_brands'             => $settings['event_brands'],
+					'start_from_current_month' => 'yes' === $settings['start_from_current_month'],
+				),
+				$this->get_date_range_query_args( $settings )
+			)
+		);
+
+		if ( ! $query->have_posts() ) {
+			printf(
+				'<div class="labrisa-events-empty">%s</div>',
+				esc_html__( 'No regular events found.', 'labrisa-core' )
+			);
+			return;
+		}
+
+		$posts = $query->posts;
+
+		// Swiper's loop mode clones slides internally to fake the wrap-
+		// around; with very few real slides its clone math can run out of
+		// room once the visible area (wider on desktop) approaches or
+		// exceeds the real slide count, which breaks slideNext() (and
+		// autoplay) at larger viewports even though it works fine on
+		// mobile. Giving it more real DOM slides to loop through sidesteps
+		// that entirely.
+		if ( 'yes' === $settings['loop'] && count( $posts ) > 0 && count( $posts ) < 6 ) {
+			$original_posts = $posts;
+			while ( count( $posts ) < 6 ) {
+				$posts = array_merge( $posts, $original_posts );
+			}
+		}
+
+		// A right-only "peek" of the next card, done purely in CSS via a
+		// fractional addition to the column count (see .labrisa-marquee__swiper
+		// .swiper-slide) rather than Swiper's slidesOffsetBefore, which — when
+		// combined with Infinite Loop — pulls a cloned slide into view on the
+		// *left* edge too, which is not what "offset" is meant to do here.
+		$peek = ( 'yes' === $settings['enable_offset'] && ! empty( $settings['offset']['size'] ) ) ? (float) $settings['offset']['size'] : 0;
+		?>
+		<div class="labrisa-regular-events">
+			<div class="labrisa-marquee" style="--labrisa-marquee-peek: <?php echo esc_attr( $peek ); ?>;">
+				<div
+					class="swiper labrisa-marquee__swiper"
+					data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
+					data-autoplay="<?php echo esc_attr( $settings['enable_autoplay'] ); ?>"
+					data-autoplay-speed="<?php echo esc_attr( $settings['autoplay_speed'] ); ?>"
+					data-pause-on-hover="<?php echo esc_attr( $settings['pause_on_hover'] ); ?>"
+				>
+					<div class="swiper-wrapper">
+						<?php
+						foreach ( $posts as $post ) {
+							setup_postdata( $post );
+							$this->render_event_slide( $post->ID, $settings );
+						}
+						wp_reset_postdata();
+						?>
+					</div>
+				</div>
+				<?php if ( 'yes' === $settings['enable_navigation'] ) : ?>
+					<div class="labrisa-marquee__nav">
+						<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--prev" data-labrisa-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						</button>
+						<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--next" data-labrisa-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						</button>
+					</div>
+				<?php endif; ?>
+			</div>
+			<?php if ( 'yes' === $settings['show_explore'] ) : ?>
+				<?php $this->render_explore_modal(); ?>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * @param int   $post_id
+	 * @param array $settings
+	 */
+	private function render_event_slide( $post_id, $settings ) {
+		$image_id = Labrisa_Core_Events::get_event_image_id( $post_id, 'event_past_image_square' );
+		$meta     = Labrisa_Core_Events::get_event_meta( $post_id );
+		$title    = get_the_title( $post_id );
+
+		$date_display = '';
+		if ( ! empty( $meta['event_date'] ) ) {
+			$date_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $meta['event_date'] );
+		}
+		?>
+		<div class="swiper-slide labrisa-event-slide">
+			<div class="labrisa-event-slide__media">
+				<?php if ( $image_id ) : ?>
+					<?php echo wp_get_attachment_image( $image_id, $settings['image_size'], false, array( 'class' => 'labrisa-event-slide__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() output is already escaped. ?>
+				<?php endif; ?>
+				<span class="labrisa-event-slide__overlay"></span>
+			</div>
+			<div class="labrisa-event-slide__body">
+					<?php if ( 'yes' === $settings['show_title'] ) : ?>
+						<span class="labrisa-event-slide__title"><?php echo esc_html( $title ); ?></span>
+					<?php endif; ?>
+					<?php if ( ( 'yes' === $settings['show_date'] && $date_display ) || ( 'yes' === $settings['show_place'] && $meta['event_place'] ) ) : ?>
+						<span class="labrisa-event-slide__meta">
+							<?php if ( 'yes' === $settings['show_date'] && $date_display ) : ?>
+								<span class="labrisa-event-slide__meta-row">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="labrisa-event-slide__meta-icon" aria-hidden="true">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+									</svg>
+									<?php echo esc_html( $date_display ); ?>
+								</span>
+							<?php endif; ?>
+							<?php if ( 'yes' === $settings['show_place'] && $meta['event_place'] ) : ?>
+								<span class="labrisa-event-slide__meta-row">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="labrisa-event-slide__meta-icon" aria-hidden="true">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+										<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+									</svg>
+									<?php echo esc_html( $meta['event_place'] ); ?>
+								</span>
+							<?php endif; ?>
+						</span>
+					<?php endif; ?>
+					<?php if ( ( 'yes' === $settings['show_book_now'] && ! empty( $meta['event_ticket_url'] ) ) || 'yes' === $settings['show_explore'] ) : ?>
+						<span class="labrisa-event-slide__actions">
+							<?php if ( 'yes' === $settings['show_book_now'] && ! empty( $meta['event_ticket_url'] ) ) : ?>
+								<a
+									class="labrisa-event-slide__btn labrisa-event-slide__btn--primary"
+									href="<?php echo esc_url( $meta['event_ticket_url'] ); ?>"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									<?php echo esc_html( $settings['book_now_label'] ); ?>
+								</a>
+							<?php endif; ?>
+							<?php if ( 'yes' === $settings['show_explore'] ) : ?>
+								<button
+									type="button"
+									class="labrisa-event-slide__btn labrisa-event-slide__btn--secondary"
+									data-labrisa-explore="<?php echo esc_attr( $this->get_explore_payload( $post_id, $title, $date_display, $image_id, $meta ) ); ?>"
+								>
+									<?php echo esc_html( $settings['explore_label'] ); ?>
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5" style="width: 14px; padding-left: 4px;">
+										<path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+									</svg>
+								</button>
+							<?php endif; ?>
+						</span>
+					<?php endif; ?>
+				</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Build the JSON payload embedded on each "Explore More" button and read
+	 * by public/js/labrisa-core-regular-events.js to populate the popup.
+	 *
+	 * @param int    $post_id
+	 * @param string $title
+	 * @param string $date_display
+	 * @param int    $image_id
+	 * @param array  $meta
+	 * @return string
+	 */
+	private function get_explore_payload( $post_id, $title, $date_display, $image_id, $meta ) {
+		$payload = array(
+			'title'     => $title,
+			'place'     => $meta['event_place'],
+			'date'      => $date_display,
+			'image'     => $image_id ? wp_get_attachment_image_url( $image_id, 'large' ) : '',
+			'terms'     => Labrisa_Core_Events::get_event_content( $post_id ),
+			'ticketUrl' => $meta['event_ticket_url'],
+		);
+
+		return wp_json_encode( $payload );
+	}
+
+	/**
+	 * Render the single popup shell reused by every "Explore More" click on
+	 * this widget instance. public/js/labrisa-core-regular-events.js fills
+	 * it in and moves it to the end of <body> on first use.
+	 */
+	private function render_explore_modal() {
+		?>
+		<div class="labrisa-event-modal" data-labrisa-event-modal hidden>
+			<div class="labrisa-event-modal__backdrop" data-labrisa-event-modal-close></div>
+			<div class="labrisa-event-modal__dialog" role="dialog" aria-modal="true">
+				<button type="button" class="labrisa-event-modal__close" data-labrisa-event-modal-close aria-label="<?php esc_attr_e( 'Close', 'labrisa-core' ); ?>">&times;</button>
+				<div class="labrisa-event-modal__media">
+					<img src="" alt="" hidden>
+				</div>
+				<div class="labrisa-event-modal__body">
+					<h3 class="labrisa-event-modal__title"></h3>
+					<div class="labrisa-event-modal__meta"></div>
+					<div class="labrisa-event-modal__terms"></div>
+					<a class="labrisa-event-modal__cta" href="#" target="_blank" rel="noopener noreferrer" hidden>
+						<?php esc_html_e( 'Book Now', 'labrisa-core' ); ?>
+					</a>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+}
