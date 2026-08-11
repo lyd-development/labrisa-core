@@ -57,6 +57,7 @@ class Labrisa_Core_Admin_Events_CSV {
 		'post_date',
 		'event_type',
 		'event_line_up',
+		'event_brand',
 		'event_place',
 		'event_date',
 		'event_end_date',
@@ -142,7 +143,7 @@ class Labrisa_Core_Admin_Events_CSV {
 			<ul style="list-style:disc;margin-left:20px;">
 				<li><?php esc_html_e( 'Leave ID empty to create a new event; fill it in to update an existing one.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'post_content is the event\'s regular post body — it also doubles as the "Explore" popup\'s terms & conditions / details content.', 'labrisa-core' ); ?></li>
-				<li><?php esc_html_e( 'event_line_up supports multiple terms separated by a pipe character, e.g. "Term A|Term B". Terms that do not exist yet are created automatically.', 'labrisa-core' ); ?></li>
+				<li><?php esc_html_e( 'event_type and event_brand are single terms; event_line_up supports multiple terms separated by a pipe character, e.g. "Term A|Term B". Terms that do not exist yet are created automatically.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'post_date, event_date, and event_end_date must be in "Y-m-d H:i:s" format, e.g. 2026-08-15 21:00:00. Leave post_date empty to use the current time on new events, or keep the existing published date when updating.', 'labrisa-core' ); ?></li>
 				<li><?php esc_html_e( 'event_banner_image and event_past_image_square accept either an image URL (downloaded into the media library) or an existing attachment ID.', 'labrisa-core' ); ?></li>
 			</ul>
@@ -229,6 +230,7 @@ class Labrisa_Core_Admin_Events_CSV {
 				'2026-08-01 10:00:00',
 				'Party',
 				'DJ One|DJ Two',
+				'La Brisa Events',
 				'La Brisa',
 				'2026-08-08 21:00:00',
 				'2026-08-08 23:59:00',
@@ -410,6 +412,10 @@ class Labrisa_Core_Admin_Events_CSV {
 			wp_set_object_terms( $post_id, array_map( 'sanitize_text_field', $terms ), Labrisa_Core_Events::TAX_EVENT_LINE_UP, false );
 		}
 
+		if ( ! empty( $data['event_brand'] ) ) {
+			wp_set_object_terms( $post_id, sanitize_text_field( $data['event_brand'] ), Labrisa_Core_Events::TAX_EVENT_BRANDS, false );
+		}
+
 		update_post_meta( $post_id, 'event_place', isset( $data['event_place'] ) ? sanitize_text_field( $data['event_place'] ) : '' );
 		update_post_meta( $post_id, 'event_date', isset( $data['event_date'] ) ? sanitize_text_field( $data['event_date'] ) : '' );
 		update_post_meta( $post_id, 'event_end_date', isset( $data['event_end_date'] ) ? sanitize_text_field( $data['event_end_date'] ) : '' );
@@ -469,6 +475,7 @@ class Labrisa_Core_Admin_Events_CSV {
 
 		$event_types = wp_get_post_terms( $post->ID, Labrisa_Core_Events::TAX_EVENT_TYPES, array( 'fields' => 'names' ) );
 		$line_up     = wp_get_post_terms( $post->ID, Labrisa_Core_Events::TAX_EVENT_LINE_UP, array( 'fields' => 'names' ) );
+		$brands      = wp_get_post_terms( $post->ID, Labrisa_Core_Events::TAX_EVENT_BRANDS, array( 'fields' => 'names' ) );
 
 		$banner_id = Labrisa_Core_Events::get_event_image_id( $post->ID, 'event_banner_image' );
 		$square_id = Labrisa_Core_Events::get_event_image_id( $post->ID, 'event_past_image_square' );
@@ -481,6 +488,7 @@ class Labrisa_Core_Admin_Events_CSV {
 			$post->post_date,
 			is_wp_error( $event_types ) ? '' : implode( '|', $event_types ),
 			is_wp_error( $line_up ) ? '' : implode( '|', $line_up ),
+			is_wp_error( $brands ) ? '' : implode( '|', $brands ),
 			$meta['event_place'],
 			$meta['event_date'],
 			$meta['event_end_date'],

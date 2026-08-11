@@ -139,6 +139,18 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 		);
 
 		$this->add_control(
+			'event_brands',
+			array(
+				'label'       => __( 'Filter by Brand', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'default'     => array(),
+				'options'     => $this->get_taxonomy_options( Labrisa_Core_Events::TAX_EVENT_BRANDS ),
+			)
+		);
+
+		$this->add_control(
 			'date_range',
 			array(
 				'label'     => __( 'Date Range', 'labrisa-core' ),
@@ -888,6 +900,7 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 				'order'          => $settings['order'],
 				'event_types'    => $settings['event_types'],
 				'event_line_up'  => $settings['event_line_up'],
+				'event_brands'   => $settings['event_brands'],
 			),
 			$this->get_date_range_query_args( $settings )
 		);
@@ -1048,6 +1061,7 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 			'order'            => 'ASC' === strtoupper( (string) ( isset( $raw['order'] ) ? $raw['order'] : '' ) ) ? 'ASC' : 'DESC',
 			'event_types'      => isset( $raw['event_types'] ) ? array_map( 'absint', (array) $raw['event_types'] ) : array(),
 			'event_line_up'    => isset( $raw['event_line_up'] ) ? array_map( 'absint', (array) $raw['event_line_up'] ) : array(),
+			'event_brands'     => isset( $raw['event_brands'] ) ? array_map( 'absint', (array) $raw['event_brands'] ) : array(),
 			'date_range'       => in_array( isset( $raw['date_range'] ) ? $raw['date_range'] : '', $date_range_options, true ) ? $raw['date_range'] : '',
 			'date_range_start' => isset( $raw['date_range_start'] ) ? sanitize_text_field( $raw['date_range_start'] ) : '',
 			'date_range_end'   => isset( $raw['date_range_end'] ) ? sanitize_text_field( $raw['date_range_end'] ) : '',
@@ -1130,13 +1144,29 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 
 		$link_attrs = array();
 
+		// If the event has its own gallery (event_have_gallery + at least
+		// one event_gallery image), give it its own lightbox slideshow group
+		// instead of the widget-wide one, so opening it lets visitors flip
+		// through just that event's photos rather than jumping into every
+		// other card's single image too. The card's own thumbnail image
+		// stays slide #1 of that group; the rest of the gallery is added as
+		// extra hidden slides right after it (see below).
+		$gallery_image_ids = array();
+
+		if ( 'yes' === $settings['enable_lightbox'] && 'yes' !== $settings['link_to_ticket'] && Labrisa_Core_Events::event_has_gallery( $post_id ) ) {
+			$gallery_image_ids = Labrisa_Core_Events::get_event_gallery_ids( $post_id );
+		}
+
+		$has_own_gallery = ! empty( $gallery_image_ids );
+		$slideshow_id    = $has_own_gallery ? $gallery_id . '-' . $post_id : $gallery_id;
+
 		if ( 'yes' === $settings['link_to_ticket'] && ! empty( $meta['event_ticket_url'] ) ) {
 			$href                    = $meta['event_ticket_url'];
 			$link_attrs['target']    = '_blank';
 			$link_attrs['rel']       = 'noopener noreferrer';
 		} elseif ( 'yes' === $settings['enable_lightbox'] && $href ) {
 			$link_attrs['data-elementor-open-lightbox']       = 'yes';
-			$link_attrs['data-elementor-lightbox-slideshow']  = $gallery_id;
+			$link_attrs['data-elementor-lightbox-slideshow']  = $slideshow_id;
 			$link_attrs['data-elementor-lightbox-title']      = get_the_title( $post_id );
 		} else {
 			$link_attrs['data-elementor-open-lightbox'] = 'no';
@@ -1163,6 +1193,25 @@ class Labrisa_Core_Elementor_Widget_Past_Events extends \Elementor\Widget_Base {
 					</span>
 				<?php endif; ?>
 			</a>
+			<?php if ( $has_own_gallery ) : ?>
+				<?php foreach ( $gallery_image_ids as $gallery_image_id ) : ?>
+					<?php
+					$gallery_image_src = wp_get_attachment_image_src( $gallery_image_id, 'full' );
+
+					if ( ! $gallery_image_src ) {
+						continue;
+					}
+					?>
+					<a
+						class="labrisa-event-card__gallery-item"
+						href="<?php echo esc_url( $gallery_image_src[0] ); ?>"
+						data-elementor-open-lightbox="yes"
+						data-elementor-lightbox-slideshow="<?php echo esc_attr( $slideshow_id ); ?>"
+						data-elementor-lightbox-title="<?php echo esc_attr( get_the_title( $post_id ) ); ?>"
+						hidden
+					></a>
+				<?php endforeach; ?>
+			<?php endif; ?>
 		</div>
 		<?php
 	}

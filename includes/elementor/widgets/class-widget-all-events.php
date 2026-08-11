@@ -156,6 +156,18 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 		);
 
 		$this->add_control(
+			'event_brands',
+			array(
+				'label'       => __( 'Filter by Brand', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'default'     => array(),
+				'options'     => $this->get_taxonomy_options( Labrisa_Core_Events::TAX_EVENT_BRANDS ),
+			)
+		);
+
+		$this->add_control(
 			'date_range',
 			array(
 				'label'     => __( 'Date Range', 'labrisa-core' ),
@@ -1052,6 +1064,7 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 					'order'                    => $settings['order'],
 					'event_types'              => $settings['event_types'],
 					'event_line_up'            => $settings['event_line_up'],
+					'event_brands'             => $settings['event_brands'],
 					'start_from_current_month' => 'yes' === $settings['start_from_current_month'],
 				),
 				$this->get_date_range_query_args( $settings )

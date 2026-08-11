@@ -43,6 +43,11 @@ class Labrisa_Core_Events {
 	const TAX_EVENT_LINE_UP = 'event-line-up';
 
 	/**
+	 * The "event-brands" taxonomy slug.
+	 */
+	const TAX_EVENT_BRANDS = 'event-brands';
+
+	/**
 	 * Query events whose event_end_date has already passed, according to the
 	 * site's configured timezone (Settings > General).
 	 *
@@ -102,6 +107,7 @@ class Labrisa_Core_Events {
 	 *     @type string $order          'ASC' or 'DESC'. Default 'ASC'.
 	 *     @type array  $event_types       Term IDs to filter by in the event-types taxonomy.
 	 *     @type array  $event_line_up     Term IDs to filter by in the event-line-up taxonomy.
+	 *     @type array  $event_brands      Term IDs to filter by in the event-brands taxonomy.
 	 *     @type string $date_range        Filter by event_date: '', 'month', '3months', '6months',
 	 *                                     'year' (rolling window ending now), or 'custom'
 	 *                                     (uses $date_range_start/$date_range_end). Default ''
@@ -128,6 +134,7 @@ class Labrisa_Core_Events {
 				'order'                     => 'ASC',
 				'event_types'               => array(),
 				'event_line_up'             => array(),
+				'event_brands'              => array(),
 				'date_range'                => '',
 				'date_range_start'          => '',
 				'date_range_end'            => '',
@@ -151,7 +158,7 @@ class Labrisa_Core_Events {
 			$query_args['orderby'] = $args['orderby'];
 		}
 
-		$tax_query = self::build_tax_query( $args['event_types'], $args['event_line_up'] );
+		$tax_query = self::build_tax_query( $args['event_types'], $args['event_line_up'], $args['event_brands'] );
 
 		if ( ! empty( $tax_query ) ) {
 			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
@@ -225,6 +232,7 @@ class Labrisa_Core_Events {
 	 *     @type string $order          'ASC' or 'DESC'.
 	 *     @type array  $event_types         Term IDs to filter by in the event-types taxonomy.
 	 *     @type array  $event_line_up       Term IDs to filter by in the event-line-up taxonomy.
+	 *     @type array  $event_brands        Term IDs to filter by in the event-brands taxonomy.
 	 *     @type bool   $current_month_only  Only include events whose event_date falls within
 	 *                                       the current calendar month (site timezone). Default false.
 	 *     @type string $date_range          Filter by event_date: '', 'month', '3months', '6months',
@@ -247,6 +255,7 @@ class Labrisa_Core_Events {
 				'order'               => 'DESC',
 				'event_types'         => array(),
 				'event_line_up'       => array(),
+				'event_brands'        => array(),
 				'current_month_only'  => false,
 				'date_range'          => '',
 				'date_range_start'    => '',
@@ -304,7 +313,7 @@ class Labrisa_Core_Events {
 			$query_args['orderby'] = $args['orderby'];
 		}
 
-		$tax_query = self::build_tax_query( $args['event_types'], $args['event_line_up'] );
+		$tax_query = self::build_tax_query( $args['event_types'], $args['event_line_up'], $args['event_brands'] );
 
 		if ( ! empty( $tax_query ) ) {
 			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
@@ -314,16 +323,17 @@ class Labrisa_Core_Events {
 	}
 
 	/**
-	 * Build a WP_Query-ready tax_query array from event-types/event-line-up
-	 * term ID lists. Shared by every query method on this class.
+	 * Build a WP_Query-ready tax_query array from event-types/event-line-up/
+	 * event-brands term ID lists. Shared by every query method on this class.
 	 *
 	 * @since    1.0.0
 	 * @access   private
 	 * @param    array    $event_types    Term IDs in the event-types taxonomy.
 	 * @param    array    $event_line_up  Term IDs in the event-line-up taxonomy.
+	 * @param    array    $event_brands   Term IDs in the event-brands taxonomy.
 	 * @return   array
 	 */
-	private static function build_tax_query( array $event_types, array $event_line_up ) {
+	private static function build_tax_query( array $event_types, array $event_line_up, array $event_brands = array() ) {
 
 		$tax_query = array();
 
@@ -340,6 +350,14 @@ class Labrisa_Core_Events {
 				'taxonomy' => self::TAX_EVENT_LINE_UP,
 				'field'    => 'term_id',
 				'terms'    => array_map( 'absint', $event_line_up ),
+			);
+		}
+
+		if ( ! empty( $event_brands ) ) {
+			$tax_query[] = array(
+				'taxonomy' => self::TAX_EVENT_BRANDS,
+				'field'    => 'term_id',
+				'terms'    => array_map( 'absint', $event_brands ),
 			);
 		}
 
@@ -426,6 +444,39 @@ class Labrisa_Core_Events {
 		$image_id = get_post_meta( $post_id, $meta_key, true );
 
 		return $image_id ? absint( $image_id ) : 0;
+	}
+
+	/**
+	 * Whether an event has its "Event Have Gallery?" (event_have_gallery)
+	 * ACF field switched on.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $post_id    Event post ID.
+	 * @return   bool
+	 */
+	public static function event_has_gallery( $post_id ) {
+		return (bool) get_post_meta( $post_id, 'event_have_gallery', true );
+	}
+
+	/**
+	 * Get the attachment IDs stored in the event_gallery ACF field.
+	 *
+	 * Reads the raw postmeta value directly (return_format only affects
+	 * get_field()'s output, not what's stored) — an ACF-style gallery field
+	 * stores a plain array of attachment IDs.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $post_id    Event post ID.
+	 * @return   int[]              Attachment IDs, in the order configured on the event. Empty if none.
+	 */
+	public static function get_event_gallery_ids( $post_id ) {
+		$raw = get_post_meta( $post_id, 'event_gallery', true );
+
+		if ( empty( $raw ) || ! is_array( $raw ) ) {
+			return array();
+		}
+
+		return array_values( array_filter( array_map( 'absint', $raw ) ) );
 	}
 
 	/**

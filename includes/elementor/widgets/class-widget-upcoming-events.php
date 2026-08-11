@@ -141,6 +141,18 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		);
 
 		$this->add_control(
+			'event_brands',
+			array(
+				'label'       => __( 'Filter by Brand', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'default'     => array(),
+				'options'     => $this->get_taxonomy_options( Labrisa_Core_Events::TAX_EVENT_BRANDS ),
+			)
+		);
+
+		$this->add_control(
 			'current_month_only',
 			array(
 				'label'       => __( 'This Month Only', 'labrisa-core' ),
@@ -940,6 +952,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				'order'               => $settings['order'],
 				'event_types'         => $settings['event_types'],
 				'event_line_up'       => $settings['event_line_up'],
+				'event_brands'        => $settings['event_brands'],
 				'current_month_only'  => 'yes' === $settings['current_month_only'],
 			)
 		);
