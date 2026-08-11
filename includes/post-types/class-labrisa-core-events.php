@@ -140,6 +140,13 @@ class Labrisa_Core_Events {
 	 * start_from_current_month all behave identically), just scoped to
 	 * regular events instead of excluding them.
 	 *
+	 * Exception: if any of $event_types/$event_line_up/$event_brands is
+	 * non-empty, the event_is_regular_event restriction is dropped entirely
+	 * — the taxonomy filter becomes the scope instead, so events matching it
+	 * are included whether or not they're flagged as regular. E.g. filtering
+	 * "Include Event Type" to a "Reguler" term also surfaces events with that
+	 * term where event_is_regular_event is false.
+	 *
 	 * @since    1.0.0
 	 * @param    array    $args    See get_all_events() for the list of supported keys.
 	 * @return   WP_Query
@@ -201,7 +208,18 @@ class Labrisa_Core_Events {
 			$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		}
 
-		$meta_query = array( self::build_regular_event_meta_query( $only_regular ) );
+		// Regular Events normally only shows event_is_regular_event = true —
+		// but once an inclusion filter (event-types/event-line-up/event-brands)
+		// is set, that filter itself is treated as the intended scope, so the
+		// regular-flag restriction is dropped entirely and events matching the
+		// filter are shown regardless of event_is_regular_event's value.
+		$has_tax_filters = ! empty( $args['event_types'] ) || ! empty( $args['event_line_up'] ) || ! empty( $args['event_brands'] );
+
+		$meta_query = array();
+
+		if ( ! ( $only_regular && $has_tax_filters ) ) {
+			$meta_query[] = self::build_regular_event_meta_query( $only_regular );
+		}
 
 		$date_range_query = self::build_date_range_meta_query( $args['date_range'], $args['date_range_start'], $args['date_range_end'] );
 
