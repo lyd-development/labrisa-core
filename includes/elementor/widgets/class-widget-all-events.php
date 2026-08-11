@@ -118,6 +118,20 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 		);
 
 		$this->add_control(
+			'start_from_current_month',
+			array(
+				'label'       => __( 'Start From Current Month', 'labrisa-core' ),
+				'description' => __( 'Show events from this month onward first (soonest first, like Upcoming Events), then continue into later months — older events are moved to the end instead of the start.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'condition'   => array(
+					'orderby' => 'event_date',
+					'order'   => 'ASC',
+				),
+			)
+		);
+
+		$this->add_control(
 			'event_types',
 			array(
 				'label'       => __( 'Filter by Event Type', 'labrisa-core' ),
@@ -1033,11 +1047,12 @@ class Labrisa_Core_Elementor_Widget_All_Events extends \Elementor\Widget_Base {
 		$query = Labrisa_Core_Events::get_all_events(
 			array_merge(
 				array(
-					'posts_per_page' => $settings['posts_per_page'],
-					'orderby'        => $settings['orderby'],
-					'order'          => $settings['order'],
-					'event_types'    => $settings['event_types'],
-					'event_line_up'  => $settings['event_line_up'],
+					'posts_per_page'           => $settings['posts_per_page'],
+					'orderby'                  => $settings['orderby'],
+					'order'                    => $settings['order'],
+					'event_types'              => $settings['event_types'],
+					'event_line_up'            => $settings['event_line_up'],
+					'start_from_current_month' => 'yes' === $settings['start_from_current_month'],
 				),
 				$this->get_date_range_query_args( $settings )
 			)

@@ -108,6 +108,12 @@ class Labrisa_Core_Events {
 	 *                                     (no filtering).
 	 *     @type string $date_range_start  'Y-m-d H:i:s' lower bound, only used when $date_range is 'custom'.
 	 *     @type string $date_range_end    'Y-m-d H:i:s' upper bound, only used when $date_range is 'custom'.
+	 *     @type bool   $start_from_current_month  Only meaningful with $orderby 'event_date' and $order
+	 *                                     'ASC'. After the normal chronological query, moves events
+	 *                                     from the 1st of the current calendar month onward to the
+	 *                                     front (still soonest first, like get_upcoming_events()),
+	 *                                     pushing older events to the end instead of the start.
+	 *                                     Default false.
 	 * }
 	 * @return   WP_Query
 	 */
@@ -116,15 +122,16 @@ class Labrisa_Core_Events {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'posts_per_page'   => 8,
-				'paged'            => 1,
-				'orderby'          => 'event_date',
-				'order'            => 'ASC',
-				'event_types'      => array(),
-				'event_line_up'    => array(),
-				'date_range'       => '',
-				'date_range_start' => '',
-				'date_range_end'   => '',
+				'posts_per_page'            => 8,
+				'paged'                     => 1,
+				'orderby'                   => 'event_date',
+				'order'                     => 'ASC',
+				'event_types'               => array(),
+				'event_line_up'             => array(),
+				'date_range'                => '',
+				'date_range_start'          => '',
+				'date_range_end'            => '',
+				'start_from_current_month'  => false,
 			)
 		);
 
@@ -156,7 +163,51 @@ class Labrisa_Core_Events {
 			$query_args['meta_query'] = $date_range_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		}
 
-		return new WP_Query( $query_args );
+		$query = new WP_Query( $query_args );
+
+		if ( $args['start_from_current_month'] && 'event_date' === $args['orderby'] && 'ASC' === strtoupper( $args['order'] ) ) {
+			self::rotate_posts_from_current_month( $query );
+		}
+
+		return $query;
+	}
+
+	/**
+	 * Re-partition an already-run, event_date-ASC-ordered WP_Query's
+	 * `$posts` array (in place) so events from the 1st of the current
+	 * calendar month onward come first — still in the same ascending order
+	 * the SQL query already returned — with older events moved to the end
+	 * instead of the front. Only makes sense for queries that fetch every
+	 * matching row in one go (posts_per_page => -1, no SQL-level paging),
+	 * which is how get_all_events() is used today (a carousel, not a
+	 * paginated list) — this does not re-sort across separate pages.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @param    WP_Query $query
+	 */
+	private static function rotate_posts_from_current_month( WP_Query $query ) {
+
+		if ( empty( $query->posts ) ) {
+			return;
+		}
+
+		$cutoff = ( new DateTimeImmutable( 'first day of this month midnight', wp_timezone() ) )->format( 'Y-m-d H:i:s' );
+
+		$from_current_month = array();
+		$before_current_month = array();
+
+		foreach ( $query->posts as $post ) {
+			$event_date = get_post_meta( $post->ID, 'event_date', true );
+
+			if ( $event_date && $event_date >= $cutoff ) {
+				$from_current_month[] = $post;
+			} else {
+				$before_current_month[] = $post;
+			}
+		}
+
+		$query->posts = array_merge( $from_current_month, $before_current_month );
 	}
 
 	/**
