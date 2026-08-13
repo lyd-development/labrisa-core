@@ -1166,17 +1166,6 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					<div class="labrisa-featured-slide__description"><?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_event_content() already runs wp_kses_post(). ?></div>
 				<?php endif; ?>
 
-				<?php if ( ( 'yes' === $settings['show_place'] && $meta['event_place'] ) || ( 'yes' === $settings['show_date'] && $date_display ) ) : ?>
-					<div class="labrisa-featured-slide__meta">
-						<?php if ( 'yes' === $settings['show_place'] && $meta['event_place'] ) : ?>
-							<span class="labrisa-featured-slide__meta-row"><?php echo esc_html( $meta['event_place'] ); ?></span>
-						<?php endif; ?>
-						<?php if ( 'yes' === $settings['show_date'] && $date_display ) : ?>
-							<span class="labrisa-featured-slide__meta-row"><?php echo esc_html( $date_display ); ?></span>
-						<?php endif; ?>
-					</div>
-				<?php endif; ?>
-
 				<?php if ( 'yes' === $settings['show_book_now'] && ! empty( $meta['event_ticket_url'] ) ) : ?>
 					<a
 						class="labrisa-featured-slide__btn"
