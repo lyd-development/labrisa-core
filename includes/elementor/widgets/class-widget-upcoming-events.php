@@ -8,6 +8,18 @@
  * slide offering a "Book Now" link (event_ticket_url) and an "Explore More"
  * button that opens a popup with the event's details.
  *
+ * Desktop-only exception: when there are fewer than 3 real matching events
+ * (a carousel isn't worth it for 1-2 cards), a CSS breakpoint swaps the card
+ * carousel for a stacked "featured" layout instead — one event fully
+ * visible per row, image on one side and title/full description/meta/
+ * button on the other, reusing labrisa-core-featured-events.css's
+ * .labrisa-featured-slide* classes (see get_style_depends() and
+ * render_featured_slide()). Both layouts are always rendered server-side;
+ * which one is visible is decided purely by a min-width media query (see
+ * labrisa-core-upcoming-events.css), since PHP can't know the viewport —
+ * so mobile/tablet always keep the normal card carousel regardless of
+ * event count.
+ *
  * @link       https://lydbaligroup.com
  * @since      1.0.0
  *
@@ -50,7 +62,10 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 	}
 
 	public function get_style_depends() {
-		return array( 'labrisa-core-upcoming-events' );
+		// labrisa-core-featured-events supplies the .labrisa-featured-slide*
+		// classes reused by the desktop-only "featured" fallback layout (see
+		// render_featured_slide()) when there are fewer than 3 real events.
+		return array( 'labrisa-core-upcoming-events', 'labrisa-core-featured-events' );
 	}
 
 	public function get_script_depends() {
@@ -279,6 +294,16 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			array(
 				'label' => __( 'Carousel', 'labrisa-core' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'enable_featured_fallback',
+			array(
+				'label'       => __( 'Featured Layout for Few Events', 'labrisa-core' ),
+				'description' => __( 'On desktop only, when there are fewer than 3 matching events, show them in a full-width "featured" layout (image + description side by side) instead of the card carousel. Mobile/tablet always keep the card carousel.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
 			)
 		);
 
@@ -623,7 +648,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			\Elementor\Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'title_typography',
-				'selector' => '{{WRAPPER}} .labrisa-event-slide__title',
+				'selector' => '{{WRAPPER}} .labrisa-event-slide__title, {{WRAPPER}} .labrisa-upcoming-events__featured .labrisa-featured-slide__title',
 			)
 		);
 
@@ -656,6 +681,38 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				'default'   => 'rgba(255,255,255,0.8)',
 				'selectors' => array(
 					'{{WRAPPER}} .labrisa-event-slide__meta' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'featured_title_color',
+			array(
+				'label'     => __( 'Featured Layout Title Color', 'labrisa-core' ),
+				'description' => __( 'Title color on the desktop-only featured fallback layout (shown when there are fewer than 3 events) — kept separate from "Title Color" above since that layout typically sits on a light background, unlike the card carousel.', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#111111',
+				'condition' => array(
+					'enable_featured_fallback' => 'yes',
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-upcoming-events__featured .labrisa-featured-slide__title' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'featured_meta_color',
+			array(
+				'label'     => __( 'Featured Layout Text Color', 'labrisa-core' ),
+				'description' => __( 'Description and date/place color on the featured fallback layout.', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#444444',
+				'condition' => array(
+					'enable_featured_fallback' => 'yes',
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .labrisa-upcoming-events__featured .labrisa-featured-slide__meta, {{WRAPPER}} .labrisa-upcoming-events__featured .labrisa-featured-slide__description' => 'color: {{VALUE}};',
 				),
 			)
 		);
@@ -730,6 +787,10 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				'default'   => '#111111',
 				'selectors' => array(
 					'{{WRAPPER}} .labrisa-event-slide__btn--primary' => 'background-color: {{VALUE}};',
+					// Also colors the "Buy Tickets" button on the desktop-only
+					// featured fallback layout (see render_featured_slide()),
+					// so this one control governs both.
+					'{{WRAPPER}} .labrisa-upcoming-events__featured .labrisa-featured-slide__btn' => 'background-color: {{VALUE}}; border-color: {{VALUE}};',
 				),
 			)
 		);
@@ -742,6 +803,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 				'default'   => '#ffffff',
 				'selectors' => array(
 					'{{WRAPPER}} .labrisa-event-slide__btn--primary' => 'color: {{VALUE}};',
+					'{{WRAPPER}} .labrisa-upcoming-events__featured .labrisa-featured-slide__btn' => 'color: {{VALUE}};',
 				),
 			)
 		);
@@ -967,6 +1029,14 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 
 		$posts = $query->posts;
 
+		// Below a Desktop-breakpoint CSS switch (see labrisa-core-upcoming-events.css)
+		// swaps the card carousel for a stacked "featured" layout (reusing
+		// labrisa-core-featured-events.css's .labrisa-featured-slide* classes)
+		// when there are too few real events to make a carousel worthwhile.
+		// Captured before the loop-mode padding below inflates $posts.
+		$real_posts          = $posts;
+		$show_featured_layout = 'yes' === $settings['enable_featured_fallback'] && count( $real_posts ) > 0 && count( $real_posts ) < 3;
+
 		// Swiper's loop mode clones slides internally to fake the wrap-
 		// around; with very few real slides its clone math can run out of
 		// room once the visible area (wider on desktop) approaches or
@@ -986,37 +1056,117 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		// combined with Infinite Loop — pulls a cloned slide into view on the
 		// *left* edge too, which is not what "offset" is meant to do here.
 		$peek = ( 'yes' === $settings['enable_offset'] && ! empty( $settings['offset']['size'] ) ) ? (float) $settings['offset']['size'] : 0;
+
+		$wrapper_class = 'labrisa-upcoming-events';
+
+		if ( $show_featured_layout ) {
+			$wrapper_class .= ' labrisa-upcoming-events--has-featured-layout';
+		}
 		?>
-		<div class="labrisa-upcoming-events">
-			<div class="labrisa-marquee" style="--labrisa-marquee-peek: <?php echo esc_attr( $peek ); ?>;">
-				<div
-					class="swiper labrisa-marquee__swiper"
-					data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
-				>
-					<div class="swiper-wrapper">
-						<?php
-						foreach ( $posts as $post ) {
-							setup_postdata( $post );
-							$this->render_event_slide( $post->ID, $settings );
-						}
-						wp_reset_postdata();
-						?>
+		<div class="<?php echo esc_attr( $wrapper_class ); ?>">
+			<div class="labrisa-upcoming-events__cards">
+				<div class="labrisa-marquee" style="--labrisa-marquee-peek: <?php echo esc_attr( $peek ); ?>;">
+					<div
+						class="swiper labrisa-marquee__swiper"
+						data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
+					>
+						<div class="swiper-wrapper">
+							<?php
+							foreach ( $posts as $post ) {
+								setup_postdata( $post );
+								$this->render_event_slide( $post->ID, $settings );
+							}
+							wp_reset_postdata();
+							?>
+						</div>
 					</div>
+					<?php if ( 'yes' === $settings['enable_navigation'] ) : ?>
+						<div class="labrisa-marquee__nav">
+							<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--prev" data-labrisa-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+							</button>
+							<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--next" data-labrisa-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+							</button>
+						</div>
+					<?php endif; ?>
 				</div>
-				<?php if ( 'yes' === $settings['enable_navigation'] ) : ?>
-					<div class="labrisa-marquee__nav">
-						<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--prev" data-labrisa-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
-							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-						</button>
-						<button type="button" class="labrisa-marquee__nav-btn labrisa-marquee__nav-btn--next" data-labrisa-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
-							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-						</button>
-					</div>
-				<?php endif; ?>
 			</div>
+			<?php if ( $show_featured_layout ) : ?>
+				<div class="labrisa-upcoming-events__featured">
+					<?php
+					foreach ( $real_posts as $post ) {
+						setup_postdata( $post );
+						$this->render_featured_slide( $post->ID, $settings );
+					}
+					wp_reset_postdata();
+					?>
+				</div>
+			<?php endif; ?>
 			<?php if ( 'yes' === $settings['show_explore'] ) : ?>
 				<?php $this->render_explore_modal(); ?>
 			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render a slide for the desktop-only "featured" fallback layout (see
+	 * $show_featured_layout in render()) — one event fully visible, image on
+	 * one side and title/description/meta/button on the other. Reuses
+	 * labrisa-core-featured-events.css's .labrisa-featured-slide* classes
+	 * (declared as an extra style dependency, see get_style_depends())
+	 * instead of duplicating that layout's CSS here.
+	 *
+	 * @param int   $post_id
+	 * @param array $settings
+	 */
+	private function render_featured_slide( $post_id, $settings ) {
+		$image_id = Labrisa_Core_Events::get_event_image_id( $post_id, 'event_banner_image' );
+		$meta     = Labrisa_Core_Events::get_event_meta( $post_id );
+		$title    = get_the_title( $post_id );
+		$content  = Labrisa_Core_Events::get_event_content( $post_id );
+
+		$date_display = '';
+		if ( ! empty( $meta['event_date'] ) ) {
+			$date_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $meta['event_date'] );
+		}
+		?>
+		<div class="labrisa-featured-slide">
+			<div class="labrisa-featured-slide__media">
+				<?php if ( $image_id ) : ?>
+					<?php echo wp_get_attachment_image( $image_id, 'large', false, array( 'class' => 'labrisa-featured-slide__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() output is already escaped. ?>
+				<?php endif; ?>
+			</div>
+			<div class="labrisa-featured-slide__content">
+				<h3 class="labrisa-featured-slide__title"><?php echo esc_html( $title ); ?></h3>
+
+				<?php if ( $content ) : ?>
+					<div class="labrisa-featured-slide__description"><?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_event_content() already runs wp_kses_post(). ?></div>
+				<?php endif; ?>
+
+				<?php if ( ( 'yes' === $settings['show_place'] && $meta['event_place'] ) || ( 'yes' === $settings['show_date'] && $date_display ) ) : ?>
+					<div class="labrisa-featured-slide__meta">
+						<?php if ( 'yes' === $settings['show_place'] && $meta['event_place'] ) : ?>
+							<span class="labrisa-featured-slide__meta-row"><?php echo esc_html( $meta['event_place'] ); ?></span>
+						<?php endif; ?>
+						<?php if ( 'yes' === $settings['show_date'] && $date_display ) : ?>
+							<span class="labrisa-featured-slide__meta-row"><?php echo esc_html( $date_display ); ?></span>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( 'yes' === $settings['show_book_now'] && ! empty( $meta['event_ticket_url'] ) ) : ?>
+					<a
+						class="labrisa-featured-slide__btn"
+						href="<?php echo esc_url( $meta['event_ticket_url'] ); ?>"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<?php echo esc_html( $settings['book_now_label'] ); ?>
+					</a>
+				<?php endif; ?>
+			</div>
 		</div>
 		<?php
 	}
@@ -1143,7 +1293,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					<div class="labrisa-event-modal__meta"></div>
 					<div class="labrisa-event-modal__terms"></div>
 					<a class="labrisa-event-modal__cta" href="#" target="_blank" rel="noopener noreferrer" hidden>
-						<?php esc_html_e( 'Book Now', 'labrisa-core' ); ?>
+						<?php esc_html_e( 'Buy Tickets', 'labrisa-core' ); ?>
 					</a>
 				</div>
 			</div>

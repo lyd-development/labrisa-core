@@ -8,6 +8,35 @@
 	position: relative;
 }
 
+.labrisa-upcoming-events__featured {
+	display: none;
+	flex-direction: column;
+	gap: 40px;
+}
+
+/* labrisa-core-featured-events.css's default .labrisa-featured-slide__btn
+   look (transparent, white border/text) assumes a dark slide background,
+   which doesn't fit here since this fallback is typically used on a light
+   section — its actual solid-button default (#111 bg / #fff text) comes
+   from the widget's own "Book Now" Style controls in PHP
+   (book_now_bg_color/book_now_text_color), not from CSS here, so there's
+   one place governing both the card and featured button color. */
+
+/* Below 1025px (Elementor's own Desktop breakpoint) the normal card
+   carousel always stays visible regardless of event count — this swap is
+   desktop-only. Both .labrisa-upcoming-events__cards and __featured are
+   always rendered server-side (see class-widget-upcoming-events.php);
+   which one shows is decided purely by this media query. */
+@media ( min-width: 1025px ) {
+	.labrisa-upcoming-events--has-featured-layout .labrisa-upcoming-events__cards {
+		display: none;
+	}
+
+	.labrisa-upcoming-events--has-featured-layout .labrisa-upcoming-events__featured {
+		display: flex;
+	}
+}
+
 .labrisa-marquee {
 	--labrisa-marquee-gap: 24px;
 	--labrisa-marquee-columns: 4;
