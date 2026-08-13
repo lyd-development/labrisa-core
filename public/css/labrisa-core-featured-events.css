@@ -121,6 +121,7 @@
 	padding: 0 12px;
 	gap: 0;
 	pointer-events: none;
+	z-index: 1;
 }
 
 .labrisa-featured-events--nav-sides .labrisa-featured-nav-btn {
