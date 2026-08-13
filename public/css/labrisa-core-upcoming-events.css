@@ -10,8 +10,12 @@
 
 .labrisa-upcoming-events__featured {
 	display: none;
-	flex-direction: column;
-	gap: 40px;
+	position: relative;
+}
+
+.labrisa-upcoming-events__featured-swiper {
+	width: 100%;
+	overflow: hidden;
 }
 
 /* labrisa-core-featured-events.css's default .labrisa-featured-slide__btn
@@ -33,7 +37,7 @@
 	}
 
 	.labrisa-upcoming-events--has-featured-layout .labrisa-upcoming-events__featured {
-		display: flex;
+		display: block;
 	}
 }
 

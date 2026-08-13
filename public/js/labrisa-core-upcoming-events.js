@@ -1,9 +1,12 @@
 /**
  * Front-end behaviour for the Labrisa Core "Upcoming Events" widget: a
  * Swiper carousel (navigation only, no autoplay) plus the "Explore More"
- * popup. Swiper itself is not bundled here — it reuses the 'swiper' script
- * Elementor core already registers from its own assets/lib/swiper/v8/,
- * declared as a dependency in Labrisa_Core_Elementor::register_assets().
+ * popup, plus a second, separate Swiper (initFeaturedCarousel()) for the
+ * desktop-only "featured" fallback layout shown instead when there are
+ * fewer than 3 matching events. Swiper itself is not bundled here — it
+ * reuses the 'swiper' script Elementor core already registers from its own
+ * assets/lib/swiper/v8/, declared as a dependency in
+ * Labrisa_Core_Elementor::register_assets().
  */
 ( function () {
 	'use strict';
@@ -48,6 +51,40 @@
 			// CSS via --labrisa-marquee-peek, not slidesOffsetBefore — that
 			// option pulls a cloned slide into view on the *left* edge too
 			// once Infinite Loop is on, which isn't the intended effect here.
+			grabCursor: true,
+			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
+		} );
+	}
+
+	/**
+	 * Swiper for the desktop-only "featured" fallback layout (see
+	 * $show_featured_layout in class-widget-upcoming-events.php's render())
+	 * — shown instead of initCarousel()'s card marquee when there are fewer
+	 * than 3 matching events. With exactly 1 slide, Swiper still
+	 * initializes (harmless) but loop is skipped and navigation was never
+	 * rendered in PHP for that case, so it just displays statically.
+	 *
+	 * @param {Element} root
+	 */
+	function initFeaturedCarousel( root ) {
+		var container = root.querySelector( '.labrisa-upcoming-events__featured-swiper' );
+
+		if ( ! container || 'undefined' === typeof window.Swiper ) {
+			return;
+		}
+
+		if ( container.swiper ) {
+			container.swiper.destroy( true, true );
+		}
+
+		var prevEl = root.querySelector( '[data-labrisa-featured-prev]' );
+		var nextEl = root.querySelector( '[data-labrisa-featured-next]' );
+		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
+		var loop = 'yes' === container.dataset.loop && slideCount > 1;
+
+		new window.Swiper( container, { // eslint-disable-line no-new
+			slidesPerView: 1,
+			loop: loop,
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
 		} );
@@ -124,6 +161,7 @@
 		}
 
 		initCarousel( root );
+		initFeaturedCarousel( root );
 
 		var modal = initModal( root );
 

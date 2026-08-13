@@ -1094,13 +1094,30 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			</div>
 			<?php if ( $show_featured_layout ) : ?>
 				<div class="labrisa-upcoming-events__featured">
-					<?php
-					foreach ( $real_posts as $post ) {
-						setup_postdata( $post );
-						$this->render_featured_slide( $post->ID, $settings );
-					}
-					wp_reset_postdata();
-					?>
+					<div
+						class="swiper labrisa-upcoming-events__featured-swiper"
+						data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
+					>
+						<div class="swiper-wrapper">
+							<?php
+							foreach ( $real_posts as $post ) {
+								setup_postdata( $post );
+								$this->render_featured_slide( $post->ID, $settings );
+							}
+							wp_reset_postdata();
+							?>
+						</div>
+					</div>
+					<?php if ( 'yes' === $settings['enable_navigation'] && count( $real_posts ) > 1 ) : ?>
+						<div class="labrisa-featured-nav">
+							<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--prev" data-labrisa-featured-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+							</button>
+							<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--next" data-labrisa-featured-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+							</button>
+						</div>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 			<?php if ( 'yes' === $settings['show_explore'] ) : ?>
@@ -1116,7 +1133,11 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 	 * one side and title/description/meta/button on the other. Reuses
 	 * labrisa-core-featured-events.css's .labrisa-featured-slide* classes
 	 * (declared as an extra style dependency, see get_style_depends())
-	 * instead of duplicating that layout's CSS here.
+	 * instead of duplicating that layout's CSS here. When there are 2 real
+	 * events, this is one Swiper slide among a small navigable carousel
+	 * (see labrisa-core-upcoming-events.js's initFeaturedCarousel()) — with
+	 * only 1 event Swiper still initializes but navigation stays hidden and
+	 * loop is skipped, so it just displays statically.
 	 *
 	 * @param int   $post_id
 	 * @param array $settings
@@ -1132,7 +1153,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 			$date_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $meta['event_date'] );
 		}
 		?>
-		<div class="labrisa-featured-slide">
+		<div class="swiper-slide labrisa-featured-slide">
 			<div class="labrisa-featured-slide__media">
 				<?php if ( $image_id ) : ?>
 					<?php echo wp_get_attachment_image( $image_id, 'large', false, array( 'class' => 'labrisa-featured-slide__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() output is already escaped. ?>
