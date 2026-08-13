@@ -1,13 +1,15 @@
 /**
  * Front-end behaviour for the Labrisa Core "Upcoming Events" widget: a
- * Swiper carousel (navigation, plus optional continuous-marquee autoplay —
- * off by default, same behavior as All/Regular Events) plus the "Explore
- * More" popup, plus a second, separate Swiper (initFeaturedCarousel()) for
- * the desktop-only "featured" fallback layout shown instead when there are
- * fewer than 3 matching events. Swiper itself is not bundled here — it
- * reuses the 'swiper' script Elementor core already registers from its own
- * assets/lib/swiper/v8/, declared as a dependency in
- * Labrisa_Core_Elementor::register_assets().
+ * Swiper carousel (navigation, plus optional pause-then-advance autoplay —
+ * off by default — that moves exactly one card at a time: "Slide Speed"
+ * controls the glide's transition duration, "Autoplay Delay" the pause
+ * before the next glide starts) plus the "Explore More" popup, plus a
+ * second, separate Swiper (initFeaturedCarousel()) with its own,
+ * independent autoplay for the desktop-only "featured" fallback layout
+ * shown instead when there are fewer than 3 matching events. Swiper itself
+ * is not bundled here — it reuses the 'swiper' script Elementor core
+ * already registers from its own assets/lib/swiper/v8/, declared as a
+ * dependency in Labrisa_Core_Elementor::register_assets().
  */
 ( function () {
 	'use strict';
@@ -37,7 +39,11 @@
 		var loop = 'yes' === container.dataset.loop;
 		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
 		var autoplayEnabled = 'yes' === container.dataset.autoplay;
-		var autoplaySpeed = parseInt( container.dataset.autoplaySpeed, 10 ) || 3000;
+		var autoplaySpeed = parseInt( container.dataset.autoplaySpeed, 10 ) || 600;
+		var autoplayDelay = parseInt( container.dataset.autoplayDelay, 10 );
+		if ( isNaN( autoplayDelay ) ) {
+			autoplayDelay = 3000;
+		}
 		var pauseOnHover = 'yes' === container.dataset.pauseOnHover;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
@@ -57,18 +63,15 @@
 			// once Infinite Loop is on, which isn't the intended effect here.
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
-			// A true continuous "marquee" (no per-card pause) rather than
-			// Swiper's default step-then-wait autoplay, matching All/Regular
-			// Events: delay is set to ~0 so the next glide starts the
-			// instant the current one ends, speed controls how long that
-			// continuous glide across one card takes (lower = faster), and
-			// freeMode keeps the motion from snapping to slide boundaries
-			// between glides.
+			// Standard Swiper slide-by-slide autoplay (no freeMode): with
+			// slidesPerView: 'auto' each slide is exactly one card, so this
+			// advances exactly one card per cycle — "speed" is the glide's
+			// own transition duration, "delay" is the pause after a glide
+			// finishes before the next one starts.
 			speed: autoplayEnabled ? autoplaySpeed : 300,
-			freeMode: autoplayEnabled ? { enabled: true, momentum: false } : false,
 			autoplay: autoplayEnabled
 				? {
-					delay: 1,
+					delay: autoplayDelay,
 					disableOnInteraction: false,
 					pauseOnMouseEnter: pauseOnHover,
 				}
@@ -81,8 +84,13 @@
 	 * $show_featured_layout in class-widget-upcoming-events.php's render())
 	 * — shown instead of initCarousel()'s card marquee when there are fewer
 	 * than 3 matching events. With exactly 1 slide, Swiper still
-	 * initializes (harmless) but loop is skipped and navigation was never
-	 * rendered in PHP for that case, so it just displays statically.
+	 * initializes (harmless) but loop/autoplay are skipped and navigation
+	 * was never rendered in PHP for that case, so it just displays
+	 * statically. Its autoplay is independent from the card carousel's
+	 * (own "Featured Layout Autoplay"/"Featured Layout Autoplay Delay"
+	 * controls) — a normal pause-then-advance autoplay, not the card
+	 * carousel's continuous glide, since only one event is ever visible
+	 * here at a time.
 	 *
 	 * @param {Element} root
 	 */
@@ -101,12 +109,22 @@
 		var nextEl = root.querySelector( '[data-labrisa-featured-next]' );
 		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
 		var loop = 'yes' === container.dataset.loop && slideCount > 1;
+		var autoplayEnabled = 'yes' === container.dataset.autoplay && slideCount > 1;
+		var autoplayDelay = parseInt( container.dataset.autoplayDelay, 10 ) || 5000;
+		var pauseOnHover = 'yes' === container.dataset.pauseOnHover;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 1,
 			loop: loop,
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
+			autoplay: autoplayEnabled
+				? {
+					delay: autoplayDelay,
+					disableOnInteraction: false,
+					pauseOnMouseEnter: pauseOnHover,
+				}
+				: false,
 		} );
 	}
 

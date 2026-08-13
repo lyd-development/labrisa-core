@@ -8,17 +8,22 @@
  * slide offering a "Book Now" link (event_ticket_url) and an "Explore More"
  * button that opens a popup with the event's details. Autoplay is off by
  * default (navigation-arrows only) but can be turned on via the Carousel
- * section's "Autoplay" control, same continuous-marquee behavior as
- * All/Regular Events.
+ * section's "Autoplay" control — unlike All/Regular Events' continuous
+ * marquee, this is a normal pause-then-advance autoplay that moves exactly
+ * one card at a time ("Slide Speed" = glide transition duration, "Autoplay
+ * Delay" = pause between cards).
  *
  * Desktop-only exception: when there are fewer than 3 real matching events
  * (a carousel isn't worth it for 1-2 cards), a CSS breakpoint swaps the card
- * carousel for a stacked "featured" layout instead — one event fully
- * visible per row, image on one side and title/full description/meta/
- * button on the other, reusing labrisa-core-featured-events.css's
- * .labrisa-featured-slide* classes (see get_style_depends() and
- * render_featured_slide()). Both layouts are always rendered server-side;
- * which one is visible is decided purely by a min-width media query (see
+ * carousel for a "featured" layout instead — one event fully visible per
+ * slide, image on one side and title/full description/meta/button on the
+ * other, reusing labrisa-core-featured-events.css's .labrisa-featured-slide*
+ * classes (see get_style_depends() and render_featured_slide()). With 2
+ * events this featured layout is itself a small Swiper with its own,
+ * independent pause-then-advance autoplay controls ("Featured Layout
+ * Autoplay"/"Featured Layout Autoplay Delay"). Both the card carousel and
+ * the featured layout are always rendered server-side; which one is visible
+ * is decided purely by a min-width media query (see
  * labrisa-core-upcoming-events.css), since PHP can't know the viewport —
  * so mobile/tablet always keep the normal card carousel regardless of
  * event count.
@@ -311,6 +316,49 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		);
 
 		$this->add_control(
+			'featured_enable_autoplay',
+			array(
+				'label'     => __( 'Featured Layout Autoplay', 'labrisa-core' ),
+				'description' => __( 'Only used when the featured layout above is showing (2 events) — a normal pause-then-advance autoplay (not a continuous marquee), one event fully visible at a time.', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SWITCHER,
+				'default'   => '',
+				'condition' => array(
+					'enable_featured_fallback' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'featured_autoplay_delay',
+			array(
+				'label'     => __( 'Featured Layout Autoplay Delay (ms)', 'labrisa-core' ),
+				'description' => __( 'How long each event stays on screen before advancing to the next.', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::NUMBER,
+				'default'   => 5000,
+				'min'       => 500,
+				'max'       => 100000,
+				'step'      => 100,
+				'condition' => array(
+					'enable_featured_fallback' => 'yes',
+					'featured_enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'featured_pause_on_hover',
+			array(
+				'label'     => __( 'Featured Layout Pause on Hover', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array(
+					'enable_featured_fallback' => 'yes',
+					'featured_enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
 			'enable_autoplay',
 			array(
 				'label'     => __( 'Autoplay', 'labrisa-core' ),
@@ -323,11 +371,27 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		$this->add_control(
 			'autoplay_speed',
 			array(
-				'label'       => __( 'Scroll Speed (ms per card)', 'labrisa-core' ),
-				'description' => __( 'This is a continuous marquee, not a pause-then-advance autoplay — the carousel glides non-stop. Lower is faster.', 'labrisa-core' ),
+				'label'       => __( 'Slide Speed (ms per card)', 'labrisa-core' ),
+				'description' => __( 'How long the glide to the next card takes. Lower is faster.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::NUMBER,
+				'default'     => 600,
+				'min'         => 100,
+				'max'         => 5000,
+				'step'        => 100,
+				'condition'   => array(
+					'enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'autoplay_delay',
+			array(
+				'label'       => __( 'Autoplay Delay (ms)', 'labrisa-core' ),
+				'description' => __( 'Pause between cards, after each glide finishes and before the next one starts.', 'labrisa-core' ),
 				'type'        => \Elementor\Controls_Manager::NUMBER,
 				'default'     => 3000,
-				'min'         => 500,
+				'min'         => 0,
 				'max'         => 100000,
 				'step'        => 100,
 				'condition'   => array(
@@ -1113,6 +1177,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 						data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
 						data-autoplay="<?php echo esc_attr( $settings['enable_autoplay'] ); ?>"
 						data-autoplay-speed="<?php echo esc_attr( $settings['autoplay_speed'] ); ?>"
+						data-autoplay-delay="<?php echo esc_attr( $settings['autoplay_delay'] ); ?>"
 						data-pause-on-hover="<?php echo esc_attr( $settings['pause_on_hover'] ); ?>"
 					>
 						<div class="swiper-wrapper">
@@ -1142,6 +1207,9 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					<div
 						class="swiper labrisa-upcoming-events__featured-swiper"
 						data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
+						data-autoplay="<?php echo esc_attr( $settings['featured_enable_autoplay'] ); ?>"
+						data-autoplay-delay="<?php echo esc_attr( $settings['featured_autoplay_delay'] ); ?>"
+						data-pause-on-hover="<?php echo esc_attr( $settings['featured_pause_on_hover'] ); ?>"
 					>
 						<div class="swiper-wrapper">
 							<?php
