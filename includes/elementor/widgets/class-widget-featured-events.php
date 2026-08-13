@@ -713,16 +713,6 @@ class Labrisa_Core_Elementor_Widget_Featured_Events extends \Elementor\Widget_Ba
 		}
 		?>
 		<div class="<?php echo esc_attr( $wrapper_class ); ?>">
-			<?php if ( 'yes' === $settings['enable_navigation'] && count( $posts ) > 1 ) : ?>
-				<div class="labrisa-featured-nav">
-					<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--prev" data-labrisa-featured-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-					<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--next" data-labrisa-featured-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-				</div>
-			<?php endif; ?>
 			<div
 				class="swiper labrisa-featured-events__swiper"
 				data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
@@ -740,6 +730,16 @@ class Labrisa_Core_Elementor_Widget_Featured_Events extends \Elementor\Widget_Ba
 					?>
 				</div>
 			</div>
+			<?php if ( 'yes' === $settings['enable_navigation'] && count( $posts ) > 1 ) : ?>
+				<div class="labrisa-featured-nav">
+					<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--prev" data-labrisa-featured-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					</button>
+					<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--next" data-labrisa-featured-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					</button>
+				</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
