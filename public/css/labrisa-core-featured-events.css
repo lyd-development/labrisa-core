@@ -97,12 +97,41 @@
 	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Nav sits below the slide, right-aligned, matching the other widgets. */
+/* Style 1 (default): nav sits below the slide, right-aligned, matching the
+   other widgets. Styles 2/3 override placement below via the wrapper's
+   .labrisa-featured-events--nav-{style} modifier class. */
 .labrisa-featured-nav {
 	display: flex;
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 16px;
+}
+
+/* Style 2: prev/next at middle-left and middle-right, overlaying the slide.
+   The nav is taken out of flow (position: absolute) so it doesn't add extra
+   height to .labrisa-featured-events, which stays position: relative as the
+   positioning context — the buttons end up vertically centered against
+   exactly the swiper's own height. */
+.labrisa-featured-events--nav-sides .labrisa-featured-nav {
+	position: absolute;
+	inset: 0;
+	margin-top: 0;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 12px;
+	gap: 0;
+	pointer-events: none;
+}
+
+.labrisa-featured-events--nav-sides .labrisa-featured-nav-btn {
+	pointer-events: auto;
+}
+
+/* Style 3: nav renders before the swiper markup in render() so it appears
+   above the slide; only the spacing direction needs flipping here. */
+.labrisa-featured-events--nav-top .labrisa-featured-nav {
+	margin-top: 0;
+	margin-bottom: 16px;
 }
 
 .labrisa-featured-nav-btn {
@@ -130,5 +159,15 @@
 	.labrisa-featured-slide,
 	.labrisa-featured-events--image-right .labrisa-featured-slide {
 		flex-direction: column;
+	}
+
+	/* Style 2 overlays the middle-left/right edges of the whole slide, which
+	   only makes sense while image + content sit side by side — once they
+	   stack on mobile, fall back to the below-slide placement instead of
+	   floating over stacked content. */
+	.labrisa-featured-events--nav-sides .labrisa-featured-nav {
+		position: static;
+		margin-top: 16px;
+		padding: 0;
 	}
 }

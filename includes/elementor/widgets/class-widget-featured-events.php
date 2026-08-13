@@ -306,6 +306,23 @@ class Labrisa_Core_Elementor_Widget_Featured_Events extends \Elementor\Widget_Ba
 		);
 
 		$this->add_control(
+			'nav_style',
+			array(
+				'label'     => __( 'Navigation Style', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'bottom',
+				'options'   => array(
+					'bottom' => __( 'Style 1 - Below', 'labrisa-core' ),
+					'sides'  => __( 'Style 2 - Left & Right (Middle)', 'labrisa-core' ),
+					'top'    => __( 'Style 3 - Above', 'labrisa-core' ),
+				),
+				'condition' => array(
+					'enable_navigation' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
 			'loop',
 			array(
 				'label'       => __( 'Infinite Loop', 'labrisa-core' ),
@@ -705,14 +722,24 @@ class Labrisa_Core_Elementor_Widget_Featured_Events extends \Elementor\Widget_Ba
 			return;
 		}
 
-		$posts       = $query->posts;
+		$posts     = $query->posts;
+		$show_nav  = 'yes' === $settings['enable_navigation'] && count( $posts ) > 1;
+		$nav_style = $settings['nav_style'];
+
 		$wrapper_class = 'labrisa-featured-events';
 
 		if ( 'right' === $settings['image_position'] ) {
 			$wrapper_class .= ' labrisa-featured-events--image-right';
 		}
+
+		if ( $show_nav ) {
+			$wrapper_class .= ' labrisa-featured-events--nav-' . sanitize_html_class( $nav_style );
+		}
 		?>
 		<div class="<?php echo esc_attr( $wrapper_class ); ?>">
+			<?php if ( $show_nav && 'top' === $nav_style ) : ?>
+				<?php $this->render_navigation(); ?>
+			<?php endif; ?>
 			<div
 				class="swiper labrisa-featured-events__swiper"
 				data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
@@ -730,16 +757,30 @@ class Labrisa_Core_Elementor_Widget_Featured_Events extends \Elementor\Widget_Ba
 					?>
 				</div>
 			</div>
-			<?php if ( 'yes' === $settings['enable_navigation'] && count( $posts ) > 1 ) : ?>
-				<div class="labrisa-featured-nav">
-					<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--prev" data-labrisa-featured-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-					<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--next" data-labrisa-featured-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-				</div>
+			<?php if ( $show_nav && 'top' !== $nav_style ) : ?>
+				<?php $this->render_navigation(); ?>
 			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the prev/next navigation buttons. Their visual placement
+	 * (below, left/right at mid-height, or above the slide) is controlled
+	 * purely via the wrapper's `labrisa-featured-events--nav-{style}`
+	 * modifier class (see labrisa-core-featured-events.css) plus where this
+	 * method is called from in render() relative to the swiper markup — the
+	 * buttons/markup themselves never change.
+	 */
+	private function render_navigation() {
+		?>
+		<div class="labrisa-featured-nav">
+			<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--prev" data-labrisa-featured-prev aria-label="<?php esc_attr_e( 'Previous', 'labrisa-core' ); ?>">
+				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+			</button>
+			<button type="button" class="labrisa-featured-nav-btn labrisa-featured-nav-btn--next" data-labrisa-featured-next aria-label="<?php esc_attr_e( 'Next', 'labrisa-core' ); ?>">
+				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+			</button>
 		</div>
 		<?php
 	}
