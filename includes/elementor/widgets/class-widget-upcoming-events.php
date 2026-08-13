@@ -6,7 +6,10 @@
  * Displays events whose event_end_date has not passed yet (site timezone)
  * as an infinite-loop marquee carousel of their event_banner_image, each
  * slide offering a "Book Now" link (event_ticket_url) and an "Explore More"
- * button that opens a popup with the event's details.
+ * button that opens a popup with the event's details. Autoplay is off by
+ * default (navigation-arrows only) but can be turned on via the Carousel
+ * section's "Autoplay" control, same continuous-marquee behavior as
+ * All/Regular Events.
  *
  * Desktop-only exception: when there are fewer than 3 real matching events
  * (a carousel isn't worth it for 1-2 cards), a CSS breakpoint swaps the card
@@ -286,7 +289,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 	}
 
 	/**
-	 * Content Tab: Swiper carousel controls (no autoplay — navigation only).
+	 * Content Tab: Swiper carousel controls (navigation, optional autoplay).
 	 */
 	protected function register_marquee_controls() {
 		$this->start_controls_section(
@@ -308,11 +311,50 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		);
 
 		$this->add_control(
+			'enable_autoplay',
+			array(
+				'label'     => __( 'Autoplay', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SWITCHER,
+				'default'   => '',
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'autoplay_speed',
+			array(
+				'label'       => __( 'Scroll Speed (ms per card)', 'labrisa-core' ),
+				'description' => __( 'This is a continuous marquee, not a pause-then-advance autoplay — the carousel glides non-stop. Lower is faster.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::NUMBER,
+				'default'     => 3000,
+				'min'         => 500,
+				'max'         => 100000,
+				'step'        => 100,
+				'condition'   => array(
+					'enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pause_on_hover',
+			array(
+				'label'     => __( 'Pause on Hover', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array(
+					'enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
 			'enable_navigation',
 			array(
-				'label'   => __( 'Navigation Arrows', 'labrisa-core' ),
-				'type'    => \Elementor\Controls_Manager::SWITCHER,
-				'default' => 'yes',
+				'label'     => __( 'Navigation Arrows', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'separator' => 'before',
 			)
 		);
 
@@ -1069,6 +1111,9 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 					<div
 						class="swiper labrisa-marquee__swiper"
 						data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
+						data-autoplay="<?php echo esc_attr( $settings['enable_autoplay'] ); ?>"
+						data-autoplay-speed="<?php echo esc_attr( $settings['autoplay_speed'] ); ?>"
+						data-pause-on-hover="<?php echo esc_attr( $settings['pause_on_hover'] ); ?>"
 					>
 						<div class="swiper-wrapper">
 							<?php

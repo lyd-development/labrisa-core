@@ -1,8 +1,9 @@
 /**
  * Front-end behaviour for the Labrisa Core "Upcoming Events" widget: a
- * Swiper carousel (navigation only, no autoplay) plus the "Explore More"
- * popup, plus a second, separate Swiper (initFeaturedCarousel()) for the
- * desktop-only "featured" fallback layout shown instead when there are
+ * Swiper carousel (navigation, plus optional continuous-marquee autoplay —
+ * off by default, same behavior as All/Regular Events) plus the "Explore
+ * More" popup, plus a second, separate Swiper (initFeaturedCarousel()) for
+ * the desktop-only "featured" fallback layout shown instead when there are
  * fewer than 3 matching events. Swiper itself is not bundled here — it
  * reuses the 'swiper' script Elementor core already registers from its own
  * assets/lib/swiper/v8/, declared as a dependency in
@@ -35,6 +36,9 @@
 		var gap = parseFloat( getComputedStyle( root.querySelector( '.labrisa-marquee' ) ).getPropertyValue( '--labrisa-marquee-gap' ) );
 		var loop = 'yes' === container.dataset.loop;
 		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
+		var autoplayEnabled = 'yes' === container.dataset.autoplay;
+		var autoplaySpeed = parseInt( container.dataset.autoplaySpeed, 10 ) || 3000;
+		var pauseOnHover = 'yes' === container.dataset.pauseOnHover;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 'auto',
@@ -53,6 +57,22 @@
 			// once Infinite Loop is on, which isn't the intended effect here.
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
+			// A true continuous "marquee" (no per-card pause) rather than
+			// Swiper's default step-then-wait autoplay, matching All/Regular
+			// Events: delay is set to ~0 so the next glide starts the
+			// instant the current one ends, speed controls how long that
+			// continuous glide across one card takes (lower = faster), and
+			// freeMode keeps the motion from snapping to slide boundaries
+			// between glides.
+			speed: autoplayEnabled ? autoplaySpeed : 300,
+			freeMode: autoplayEnabled ? { enabled: true, momentum: false } : false,
+			autoplay: autoplayEnabled
+				? {
+					delay: 1,
+					disableOnInteraction: false,
+					pauseOnMouseEnter: pauseOnHover,
+				}
+				: false,
 		} );
 	}
 
