@@ -329,10 +329,27 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 		);
 
 		$this->add_control(
+			'featured_autoplay_speed',
+			array(
+				'label'       => __( 'Featured Layout Slide Speed (ms)', 'labrisa-core' ),
+				'description' => __( 'How long the transition to the next event takes.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::NUMBER,
+				'default'     => 600,
+				'min'         => 100,
+				'max'         => 5000,
+				'step'        => 100,
+				'condition'   => array(
+					'enable_featured_fallback' => 'yes',
+					'featured_enable_autoplay' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
 			'featured_autoplay_delay',
 			array(
 				'label'     => __( 'Featured Layout Autoplay Delay (ms)', 'labrisa-core' ),
-				'description' => __( 'How long each event stays on screen before advancing to the next.', 'labrisa-core' ),
+				'description' => __( 'How long each event stays on screen before the next transition starts.', 'labrisa-core' ),
 				'type'      => \Elementor\Controls_Manager::NUMBER,
 				'default'   => 5000,
 				'min'       => 500,
@@ -1208,6 +1225,7 @@ class Labrisa_Core_Elementor_Widget_Upcoming_Events extends \Elementor\Widget_Ba
 						class="swiper labrisa-upcoming-events__featured-swiper"
 						data-loop="<?php echo esc_attr( $settings['loop'] ); ?>"
 						data-autoplay="<?php echo esc_attr( $settings['featured_enable_autoplay'] ); ?>"
+						data-autoplay-speed="<?php echo esc_attr( $settings['featured_autoplay_speed'] ); ?>"
 						data-autoplay-delay="<?php echo esc_attr( $settings['featured_autoplay_delay'] ); ?>"
 						data-pause-on-hover="<?php echo esc_attr( $settings['featured_pause_on_hover'] ); ?>"
 					>

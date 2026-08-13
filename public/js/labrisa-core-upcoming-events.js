@@ -90,7 +90,8 @@
 	 * (own "Featured Layout Autoplay"/"Featured Layout Autoplay Delay"
 	 * controls) — a normal pause-then-advance autoplay, not the card
 	 * carousel's continuous glide, since only one event is ever visible
-	 * here at a time.
+	 * here at a time. "Slide Speed" is the transition duration itself,
+	 * "Autoplay Delay" the pause before that transition starts.
 	 *
 	 * @param {Element} root
 	 */
@@ -110,12 +111,14 @@
 		var slideCount = container.querySelectorAll( '.swiper-slide' ).length;
 		var loop = 'yes' === container.dataset.loop && slideCount > 1;
 		var autoplayEnabled = 'yes' === container.dataset.autoplay && slideCount > 1;
+		var autoplaySpeed = parseInt( container.dataset.autoplaySpeed, 10 ) || 600;
 		var autoplayDelay = parseInt( container.dataset.autoplayDelay, 10 ) || 5000;
 		var pauseOnHover = 'yes' === container.dataset.pauseOnHover;
 
 		new window.Swiper( container, { // eslint-disable-line no-new
 			slidesPerView: 1,
 			loop: loop,
+			speed: autoplayEnabled ? autoplaySpeed : 300,
 			grabCursor: true,
 			navigation: ( prevEl && nextEl ) ? { prevEl: prevEl, nextEl: nextEl } : false,
 			autoplay: autoplayEnabled
