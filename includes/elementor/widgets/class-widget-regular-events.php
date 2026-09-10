@@ -266,21 +266,11 @@ class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Bas
 		);
 
 		$this->add_control(
-			'heading_buttons',
+			'heading_image_link',
 			array(
-				'label'     => __( 'Buttons', 'labrisa-core' ),
+				'label'     => __( 'Image Link', 'labrisa-core' ),
 				'type'      => \Elementor\Controls_Manager::HEADING,
 				'separator' => 'before',
-			)
-		);
-
-		$this->add_control(
-			'show_book_now',
-			array(
-				'label'       => __( 'Show "Book Now" Button', 'labrisa-core' ),
-				'description' => __( 'Only shown on slides that have a Ticket URL set — unless Custom Link below is enabled, in which case it always shows.', 'labrisa-core' ),
-				'type'        => \Elementor\Controls_Manager::SWITCHER,
-				'default'     => 'yes',
 			)
 		);
 
@@ -288,12 +278,9 @@ class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Bas
 			'enable_custom_link',
 			array(
 				'label'       => __( 'Use Custom Link for All Items', 'labrisa-core' ),
-				'description' => __( 'When enabled, every event\'s "Book Now" button goes to the link below instead of that event\'s own Ticket URL.', 'labrisa-core' ),
+				'description' => __( 'When enabled, every event\'s image links to the URL below instead of doing nothing — independent of the "Book Now"/"Explore More" buttons below.', 'labrisa-core' ),
 				'type'        => \Elementor\Controls_Manager::SWITCHER,
 				'default'     => '',
-				'condition'   => array(
-					'show_book_now' => 'yes',
-				),
 			)
 		);
 
@@ -309,9 +296,27 @@ class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Bas
 					'nofollow'    => false,
 				),
 				'condition'   => array(
-					'show_book_now'       => 'yes',
-					'enable_custom_link'  => 'yes',
+					'enable_custom_link' => 'yes',
 				),
+			)
+		);
+
+		$this->add_control(
+			'heading_buttons',
+			array(
+				'label'     => __( 'Buttons', 'labrisa-core' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'show_book_now',
+			array(
+				'label'       => __( 'Show "Book Now" Button', 'labrisa-core' ),
+				'description' => __( 'Only shown on slides that have a Ticket URL set.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => 'yes',
 			)
 		);
 
@@ -1188,25 +1193,23 @@ class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Bas
 		// event's own event_ticket_url, and the button no longer requires a
 		// ticket URL to show at all. The render-attribute keys are suffixed
 		// with $post_id since this method runs once per slide within the
-		// same widget render.
+		// same widget render. This is entirely independent of the "Book
+		// Now" button below, which always keeps using each event's own
+		// event_ticket_url regardless of this setting.
 		$use_custom_link   = 'yes' === $settings['enable_custom_link'] && ! empty( $settings['custom_link']['url'] );
-		$show_book_now     = 'yes' === $settings['show_book_now'] && ( $use_custom_link || ! empty( $meta['event_ticket_url'] ) );
+		$show_book_now     = 'yes' === $settings['show_book_now'] && ! empty( $meta['event_ticket_url'] );
 		$book_now_attr_key = 'book_now_link_' . $post_id;
 		$image_attr_key    = 'image_link_' . $post_id;
 
 		if ( $show_book_now ) {
-			if ( $use_custom_link ) {
-				$this->add_link_attributes( $book_now_attr_key, $settings['custom_link'] );
-			} else {
-				$this->add_render_attribute(
-					$book_now_attr_key,
-					array(
-						'href'   => $meta['event_ticket_url'],
-						'target' => '_blank',
-						'rel'    => 'noopener noreferrer',
-					)
-				);
-			}
+			$this->add_render_attribute(
+				$book_now_attr_key,
+				array(
+					'href'   => $meta['event_ticket_url'],
+					'target' => '_blank',
+					'rel'    => 'noopener noreferrer',
+				)
+			);
 		}
 
 		if ( $use_custom_link ) {
