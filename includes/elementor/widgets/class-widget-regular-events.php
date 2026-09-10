@@ -278,9 +278,40 @@ class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Bas
 			'show_book_now',
 			array(
 				'label'       => __( 'Show "Book Now" Button', 'labrisa-core' ),
-				'description' => __( 'Only shown on slides that have a Ticket URL set.', 'labrisa-core' ),
+				'description' => __( 'Only shown on slides that have a Ticket URL set — unless Custom Link below is enabled, in which case it always shows.', 'labrisa-core' ),
 				'type'        => \Elementor\Controls_Manager::SWITCHER,
 				'default'     => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'enable_custom_link',
+			array(
+				'label'       => __( 'Use Custom Link for All Items', 'labrisa-core' ),
+				'description' => __( 'When enabled, every event\'s "Book Now" button goes to the link below instead of that event\'s own Ticket URL.', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::SWITCHER,
+				'default'     => '',
+				'condition'   => array(
+					'show_book_now' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'custom_link',
+			array(
+				'label'       => __( 'Custom Link', 'labrisa-core' ),
+				'type'        => \Elementor\Controls_Manager::URL,
+				'placeholder' => __( 'https://your-link.com', 'labrisa-core' ),
+				'default'     => array(
+					'url'         => '',
+					'is_external' => true,
+					'nofollow'    => false,
+				),
+				'condition'   => array(
+					'show_book_now'       => 'yes',
+					'enable_custom_link'  => 'yes',
+				),
 			)
 		);
 
@@ -1151,14 +1182,48 @@ class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Bas
 		if ( ! empty( $meta['event_date'] ) ) {
 			$date_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $meta['event_date'] );
 		}
+
+		// When "Use Custom Link for All Items" is on, the event's image and
+		// its "Book Now" button both point to that one URL instead of the
+		// event's own event_ticket_url, and the button no longer requires a
+		// ticket URL to show at all. The render-attribute keys are suffixed
+		// with $post_id since this method runs once per slide within the
+		// same widget render.
+		$use_custom_link   = 'yes' === $settings['enable_custom_link'] && ! empty( $settings['custom_link']['url'] );
+		$show_book_now     = 'yes' === $settings['show_book_now'] && ( $use_custom_link || ! empty( $meta['event_ticket_url'] ) );
+		$book_now_attr_key = 'book_now_link_' . $post_id;
+		$image_attr_key    = 'image_link_' . $post_id;
+
+		if ( $show_book_now ) {
+			if ( $use_custom_link ) {
+				$this->add_link_attributes( $book_now_attr_key, $settings['custom_link'] );
+			} else {
+				$this->add_render_attribute(
+					$book_now_attr_key,
+					array(
+						'href'   => $meta['event_ticket_url'],
+						'target' => '_blank',
+						'rel'    => 'noopener noreferrer',
+					)
+				);
+			}
+		}
+
+		if ( $use_custom_link ) {
+			$this->add_link_attributes( $image_attr_key, $settings['custom_link'] );
+		}
 		?>
 		<div class="swiper-slide labrisa-event-slide">
-			<div class="labrisa-event-slide__media">
+			<?php if ( $use_custom_link ) : ?>
+				<a class="labrisa-event-slide__media" <?php $this->print_render_attribute_string( $image_attr_key ); ?>>
+			<?php else : ?>
+				<div class="labrisa-event-slide__media">
+			<?php endif; ?>
 				<?php if ( $image_id ) : ?>
 					<?php echo wp_get_attachment_image( $image_id, $settings['image_size'], false, array( 'class' => 'labrisa-event-slide__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() output is already escaped. ?>
 				<?php endif; ?>
 				<span class="labrisa-event-slide__overlay"></span>
-			</div>
+			<?php echo $use_custom_link ? '</a>' : '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static markup, no user input. ?>
 			<div class="labrisa-event-slide__body">
 					<?php if ( 'yes' === $settings['show_title'] ) : ?>
 						<span class="labrisa-event-slide__title"><?php echo esc_html( $title ); ?></span>
@@ -1184,14 +1249,12 @@ class Labrisa_Core_Elementor_Widget_Regular_Events extends \Elementor\Widget_Bas
 							<?php endif; ?>
 						</span>
 					<?php endif; ?>
-					<?php if ( ( 'yes' === $settings['show_book_now'] && ! empty( $meta['event_ticket_url'] ) ) || 'yes' === $settings['show_explore'] ) : ?>
+					<?php if ( $show_book_now || 'yes' === $settings['show_explore'] ) : ?>
 						<span class="labrisa-event-slide__actions">
-							<?php if ( 'yes' === $settings['show_book_now'] && ! empty( $meta['event_ticket_url'] ) ) : ?>
+							<?php if ( $show_book_now ) : ?>
 								<a
 									class="labrisa-event-slide__btn labrisa-event-slide__btn--primary"
-									href="<?php echo esc_url( $meta['event_ticket_url'] ); ?>"
-									target="_blank"
-									rel="noopener noreferrer"
+									<?php $this->print_render_attribute_string( $book_now_attr_key ); ?>
 								>
 									<?php echo esc_html( $settings['book_now_label'] ); ?>
 								</a>
