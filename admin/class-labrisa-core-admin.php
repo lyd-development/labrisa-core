@@ -132,4 +132,95 @@ class Labrisa_Core_Admin {
 
 	}
 
+	/**
+	 * Insert an "Event Date" column (event_date ACF field) into the Events
+	 * admin list table, right after the Title column.
+	 *
+	 * @since    1.0.0
+	 * @param    array $columns
+	 * @return   array
+	 */
+	public function add_events_date_column( $columns ) {
+
+		$new_columns = array();
+
+		foreach ( $columns as $key => $label ) {
+			$new_columns[ $key ] = $label;
+
+			if ( 'title' === $key ) {
+				$new_columns['event_date'] = __( 'Event Date', 'labrisa-core' );
+			}
+		}
+
+		return $new_columns;
+
+	}
+
+	/**
+	 * Output the value for the "Event Date" admin list column added by
+	 * add_events_date_column().
+	 *
+	 * @since    1.0.0
+	 * @param    string $column
+	 * @param    int    $post_id
+	 */
+	public function render_events_date_column( $column, $post_id ) {
+
+		if ( 'event_date' !== $column ) {
+			return;
+		}
+
+		$event_date = get_post_meta( $post_id, 'event_date', true );
+
+		if ( empty( $event_date ) ) {
+			echo '&#8212;';
+			return;
+		}
+
+		echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $event_date ) );
+
+	}
+
+	/**
+	 * Make the "Event Date" admin list column sortable.
+	 *
+	 * @since    1.0.0
+	 * @param    array $columns
+	 * @return   array
+	 */
+	public function make_events_date_column_sortable( $columns ) {
+
+		$columns['event_date'] = 'event_date';
+
+		return $columns;
+
+	}
+
+	/**
+	 * Handle sorting by the "Event Date" column: WP_Query needs an explicit
+	 * meta_key + orderby => 'meta_value' pair to sort by an ACF field, since
+	 * "event_date" itself isn't a native sortable column/query var.
+	 *
+	 * @since    1.0.0
+	 * @param    WP_Query $query
+	 */
+	public function sort_events_by_date_column( $query ) {
+
+		if ( ! is_admin() || ! $query->is_main_query() ) {
+			return;
+		}
+
+		if ( Labrisa_Core_Events::POST_TYPE !== $query->get( 'post_type' ) ) {
+			return;
+		}
+
+		if ( 'event_date' !== $query->get( 'orderby' ) ) {
+			return;
+		}
+
+		$query->set( 'meta_key', 'event_date' ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+		$query->set( 'orderby', 'meta_value' );
+
+	}
+
 }

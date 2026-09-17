@@ -179,6 +179,11 @@ class Labrisa_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'set_events_admin_default_order' );
 
+		$this->loader->add_filter( 'manage_' . Labrisa_Core_Events::POST_TYPE . '_posts_columns', $plugin_admin, 'add_events_date_column' );
+		$this->loader->add_action( 'manage_' . Labrisa_Core_Events::POST_TYPE . '_posts_custom_column', $plugin_admin, 'render_events_date_column', 10, 2 );
+		$this->loader->add_filter( 'manage_edit-' . Labrisa_Core_Events::POST_TYPE . '_sortable_columns', $plugin_admin, 'make_events_date_column_sortable' );
+		$this->loader->add_action( 'pre_get_posts', $plugin_admin, 'sort_events_by_date_column' );
+
 		$plugin_events_csv = new Labrisa_Core_Admin_Events_CSV();
 
 		$this->loader->add_action( 'admin_menu', $plugin_events_csv, 'register_menu' );
